@@ -10,8 +10,49 @@ namespace ConsoleQChomp
         {
             Console.WriteLine("QChomp Console\n");
 
-            Field gameField = new Field();
-            AI ai = Train(10000);
+            int h = 0, w = 0, iter = 0;
+            bool isValid = false;
+
+            do
+            {
+                if (h < 2 || h > 20)
+                {
+                    Console.Write("Enter height: ");
+
+                    bool valid = Int32.TryParse(Console.ReadLine(), out h);
+                    if (!valid || h < 2 || h > 20)
+                    {
+                        continue;
+                    }
+                }
+
+                if (w < 2 || w > 20)
+                {
+                    Console.Write("Enter width: ");
+
+                    bool valid = Int32.TryParse(Console.ReadLine(), out w);
+                    if (!valid || w < 2 || w > 20)
+                    {
+                        continue;
+                    }
+                }
+
+                if (iter < 1)
+                {
+                    Console.Write("Enter iterations: ");
+
+                    bool valid = Int32.TryParse(Console.ReadLine(), out iter);
+                    if (!valid || iter < 1)
+                    {
+                        continue;
+                    }
+                }
+            }
+            while ((h < 2 || h > 20) || (w < 2 || w > 20) || iter < 1);
+            Console.WriteLine();
+
+            Field gameField = new Field(h, w, (0, 0));
+            AI ai = Train(iter);
             Display(gameField);
 
             // Iterate until there's a winner
@@ -21,7 +62,7 @@ namespace ConsoleQChomp
                 if (gameField.Player == (int)Field.Players.Player1)
                 {
                     int height, width;
-                    bool isValid = false;
+                    isValid = false;
 
                     do
                     {
@@ -42,19 +83,15 @@ namespace ConsoleQChomp
                                 validHeight && height >= 0 && height <= (gameField.GridHeight - 1))
                             {
                                 (int, int) action = (height, width);
-                                (int, int) suitableAction = (-1, -1);
 
                                 List<(int, int)> availableActions = Field.AvailableActions(gameField.Grid);
-                                suitableAction = availableActions.Find(x => x == action);
+                                int suitableIndex = availableActions.FindIndex(x => x == action);
 
                                 // Make sure current move is available to the user
-                                if (suitableAction != (-1, -1))
+                                if (suitableIndex != -1)
                                 {
                                     gameField.MakeMove(action);
                                     isValid = true;
-
-                                    // For testing purposes
-                                    Console.WriteLine($"Move cell: ({height + 1}, {width + 1})\n\n");
                                 }
                                 else
                                 {
@@ -162,16 +199,21 @@ namespace ConsoleQChomp
                 for (int j = 0; j < game.GridWidth; j++)
                 {
                     char val = ' ';
+                    ConsoleColor outputForeColor = default, outputBackColor = default;
 
                     // Get suitable char for current cell condition
                     switch (game.Grid[i, j])
                     {
                         case (int)Field.Conditions.Poisoned:
                             val = '*';
+                            outputForeColor = ConsoleColor.White;
+                            outputBackColor = ConsoleColor.Red;
                             break;
 
                         case (int)Field.Conditions.Used:
                             val = '/';
+                            outputForeColor = ConsoleColor.White;
+                            outputBackColor = ConsoleColor.Blue;
                             break;
 
                         case (int)Field.Conditions.Blank:
@@ -180,7 +222,11 @@ namespace ConsoleQChomp
                     }
 
                     Console.Write(" ");
-                    Console.Write($"{val}"); // TODO: change colors here
+                    Console.ForegroundColor = outputForeColor;
+                    Console.BackgroundColor = outputBackColor;
+                    Console.Write($"{val}");
+                    Console.ForegroundColor = ConsoleColor.Gray;
+                    Console.BackgroundColor = ConsoleColor.Black;
                     Console.Write(" |");
                 }
                 Console.WriteLine();

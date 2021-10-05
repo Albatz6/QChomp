@@ -8,7 +8,7 @@ namespace QChompLibrary
     {
         Dictionary<(int[,] State, (int Height, int Width) Action), double> _qDict;  // Dict of q-values for any state and action
         readonly double _alpha = 0.5;                                               // Learning rate coefficient
-        readonly double _epsilon = 0.1;                                             // Eps-prob for random move choice (encourages expolartion)
+        readonly double _epsilon = 0.15;                                            // Eps-prob for random move choice (encourages expolartion)
 
 
         #region Constructors
@@ -24,6 +24,11 @@ namespace QChompLibrary
             _alpha = alpha;
             _epsilon = epsilon;
         }
+        #endregion
+
+
+        #region Properties
+
         #endregion
 
 
