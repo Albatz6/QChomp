@@ -13,6 +13,7 @@ namespace ConsoleQChomp
             int h = 0, w = 0, iter = 0;
             bool isValid = false;
 
+            // Startup parameters input
             do
             {
                 if (h < 2 || h > 20)
@@ -51,8 +52,10 @@ namespace ConsoleQChomp
             while ((h < 2 || h > 20) || (w < 2 || w > 20) || iter < 1);
             Console.WriteLine();
 
+
             Field gameField = new Field(h, w, (0, 0));
-            AI ai = Train(iter);
+            AI ai = Train(iter, h, w);
+            Console.WriteLine($"Transitions overall: {ai.Transitions}\n");
             Display(gameField);
 
             // Iterate until there's a winner
@@ -121,19 +124,23 @@ namespace ConsoleQChomp
 
 
         // Returns AI trained given amount of times to play the game
-        static AI Train(int iterations)
+        static AI Train(int iterations, int h, int w)
         {
+            int delta = 0;
             AI player = new AI();
 
             for (int i = 0; i < iterations; i++)
             {
                 if ((i + 1) % 1000 == 0)
                 {
-                    Console.WriteLine($"Training game {((i + 1) / 1000)}k...");
+                    int transitions = player.Transitions;
+
+                    Console.WriteLine($"Training game {((i + 1) / 1000)}k... ({transitions} transitions, {transitions - delta} delta)");
+                    delta = player.Transitions;
                 }
 
                 // Initialize new game
-                Field game = new Field();
+                Field game = new Field(h, w, (0, 0));
 
                 // Keeping track of last move made by both players
                 Dictionary<int, (int[,] State, (int Height, int Width) Action)> last;
@@ -201,7 +208,7 @@ namespace ConsoleQChomp
                     char val = ' ';
                     ConsoleColor outputForeColor = default, outputBackColor = default;
 
-                    // Get suitable char for current cell condition
+                    // Get suitable char and color for current cell condition
                     switch (game.Grid[i, j])
                     {
                         case (int)Field.Conditions.Poisoned:

@@ -20,7 +20,6 @@ namespace QChompLibrary
                     {
                         if (x.State[i, j] != y.State[i, j])
                         {
-                            Console.WriteLine($"{x.State[i, j]} : {y.State[i, j]}");
                             validState = false;
                         }
                     }
@@ -34,7 +33,6 @@ namespace QChompLibrary
             // Check actions equality
             if ((x.Action.Item1 != y.Action.Item1) || (x.Action.Item2 != y.Action.Item2))
             {
-                Console.WriteLine($"{x.Action.Item1} : {y.Action.Item1}, {x.Action.Item2} : {y.Action.Item2}");
                 validAction = false;
             }
 

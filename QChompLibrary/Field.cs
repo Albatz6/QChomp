@@ -18,7 +18,7 @@ namespace QChompLibrary
         // Default init with 10x12 field where the upperleft cell is poisoned and Player1 is the default player
         public Field()
         {
-            _grid = new int[9, 13];
+            _grid = new int[6, 8];
             _grid[0, 0] = (int)Conditions.Poisoned;
             _poisoned = (0, 0);
             _player = (int)Players.Player1;

@@ -28,7 +28,7 @@ namespace QChompLibrary
 
 
         #region Properties
-
+        public int Transitions => _qDict.Count;
         #endregion
 
 
