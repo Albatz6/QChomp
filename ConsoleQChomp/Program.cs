@@ -8,56 +8,191 @@ namespace ConsoleQChomp
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("QChomp Console\n");
+            Field gameField;
+            AI ai;
+            bool saveFile = false, loadFile = false;
+            string path = null;
+            int iter = 0;
 
-            int h = 0, w = 0, iter = 0;
-            bool isValid = false;
-
-            // Startup parameters input
-            do
+            // Command-line arguments processing
+            if (args.Length != 0)
             {
-                if (h < 2 || h > 20)
-                {
-                    Console.Write("Enter height: ");
+                string last = null;
 
-                    bool valid = Int32.TryParse(Console.ReadLine(), out h);
-                    if (!valid || h < 2 || h > 20)
+                foreach (string s in args)
+                {
+                    switch (s)
                     {
-                        continue;
+                        case "-h":
+                        case "--help":
+                            PrintHelp();
+                            Environment.Exit(0);
+                            break;
+
+                        case "--save":
+                            saveFile = true;
+                            break;
+
+                        case "--load":
+                            loadFile = true;
+                            break;
+
+                        default:
+                            if (last == "--save" || last == "--load")
+                            {
+                                path = s;   // Obtain filename if either saving or loading will be performed
+                            }
+                            else
+                            {
+                                Console.ForegroundColor = ConsoleColor.Red;
+                                Console.WriteLine("Invalid command. See the list of available commands.");
+                                Console.ResetColor();
+                                PrintHelp();
+                                Environment.Exit(0);
+                            }
+
+                            break;
                     }
+
+                    // Remembering last argument
+                    last = s;
                 }
 
-                if (w < 2 || w > 20)
+                // Exit with error if user tried to load and save simultaneously or if they try to load with no path provided
+                if ((loadFile && saveFile) || (loadFile && path == null))
                 {
-                    Console.Write("Enter width: ");
-
-                    bool valid = Int32.TryParse(Console.ReadLine(), out w);
-                    if (!valid || w < 2 || w > 20)
-                    {
-                        continue;
-                    }
-                }
-
-                if (iter < 1)
-                {
-                    Console.Write("Enter iterations: ");
-
-                    bool valid = Int32.TryParse(Console.ReadLine(), out iter);
-                    if (!valid || iter < 1)
-                    {
-                        continue;
-                    }
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Invalid command. See the list of available commands.");
+                    Console.ResetColor();
+                    PrintHelp();
+                    Environment.Exit(0);
                 }
             }
-            while ((h < 2 || h > 20) || (w < 2 || w > 20) || iter < 1);
-            Console.WriteLine();
 
+            Console.WriteLine("QChomp Console v1\n");
 
-            Field gameField = new Field(h, w, (0, 0));
-            AI ai = Train(iter, h, w);
+            // Load model if specified, otherwise prompt user to enter startup parameters
+            if (loadFile)
+            {
+                (AI, Field, int) model = AI.LoadModel(path);
+                gameField = model.Item2;
+                ai = model.Item1;
+                iter = model.Item3;
+            }
+            else
+            {
+                int h = 0, w = 0;
+
+                // Startup parameters input
+                do
+                {
+                    if (h < 2 || h > 20)
+                    {
+                        Console.Write("Enter height: ");
+
+                        bool valid = Int32.TryParse(Console.ReadLine(), out h);
+                        if (!valid || h < 2 || h > 20)
+                        {
+                            continue;
+                        }
+                    }
+
+                    if (w < 2 || w > 20)
+                    {
+                        Console.Write("Enter width: ");
+
+                        bool valid = Int32.TryParse(Console.ReadLine(), out w);
+                        if (!valid || w < 2 || w > 20)
+                        {
+                            continue;
+                        }
+                    }
+
+                    if (iter < 1)
+                    {
+                        Console.Write("Enter iterations: ");
+
+                        bool valid = Int32.TryParse(Console.ReadLine(), out iter);
+                        if (!valid || iter < 1)
+                        {
+                            continue;
+                        }
+                    }
+                }
+                while ((h < 2 || h > 20) || (w < 2 || w > 20) || iter < 1);
+                Console.WriteLine();
+
+                gameField = new Field(h, w, (0, 0));
+                ai = Train(iter, h, w);
+
+                if (saveFile)
+                {
+                    ai.SaveModel(gameField, iter);
+                }
+            }
+
             Console.WriteLine($"Transitions overall: {ai.Transitions}\n");
-            Display(gameField);
 
+            // Iterate while user decides to play again
+            bool newGame = true;
+            while (newGame)
+            {
+                Display(gameField);
+                Play(gameField, ai);
+
+                // Congratulate winner
+                // Player1 is the user, Player2 is AI
+                string output = (gameField.Winner == (int)Field.Players.Player1) ? ("Congratulations, you won!") : ("AI won!"); 
+                Console.WriteLine($"{output}\n");
+
+                // Save model if user agrees
+                bool validAnswer = false;
+                if (!loadFile && !saveFile)
+                {
+                    validAnswer = false;
+
+                    do
+                    {
+                        Console.Write("Do you want to save current model? [Y/n]: ");
+                        string input = Console.ReadLine().ToLower();
+
+                        if (input == "y" || input == "yes")
+                        {
+                            validAnswer = true;
+                            ai.SaveModel(gameField, iter, path);
+                        }
+                        else if (input == "n" || input == "no")
+                        {
+                            validAnswer = true;
+                        }
+                    } while (!validAnswer);    
+                }
+
+                // Stop looping if user denied new game offer
+                validAnswer = false;
+                do
+                {
+                    Console.Write("Do you want to play again? [Y/n]: ");
+                    string input = Console.ReadLine().ToLower();
+
+                    if (input == "y" || input == "yes")
+                    {
+                        validAnswer = true;
+                        gameField.Reset();
+                    }
+                    else if (input == "n" || input == "no")
+                    {
+                        validAnswer = true;
+                        newGame = false;
+                    }
+                } while (!validAnswer);
+            }
+        }
+
+
+        // Game loop
+        static void Play(Field gameField, AI ai)
+        {
             // Iterate until there's a winner
             while (gameField.Winner == (int)Field.Players.Blank)
             {
@@ -65,7 +200,7 @@ namespace ConsoleQChomp
                 if (gameField.Player == (int)Field.Players.Player1)
                 {
                     int height, width;
-                    isValid = false;
+                    bool isValid = false;
 
                     do
                     {
@@ -115,13 +250,7 @@ namespace ConsoleQChomp
 
                 Display(gameField);
             }
-
-            // Congratulate winner
-            // Player1 is the user, Player2 is AI
-            string output = (gameField.Winner == (int)Field.Players.Player1) ? ("Congratulations, you won!") : ("AI won!");
-            Console.WriteLine($"{output}\n");
         }
-
 
         // Returns AI trained given amount of times to play the game
         static AI Train(int iterations, int h, int w)
@@ -233,8 +362,7 @@ namespace ConsoleQChomp
                     Console.ForegroundColor = outputForeColor;
                     Console.BackgroundColor = outputBackColor;
                     Console.Write($"{val}");
-                    Console.ForegroundColor = ConsoleColor.Gray;
-                    Console.BackgroundColor = ConsoleColor.Black;
+                    Console.ResetColor();
                     Console.Write(" |");
                 }
                 Console.WriteLine();
@@ -255,6 +383,16 @@ namespace ConsoleQChomp
                 Console.Write("|---");
             }
             Console.WriteLine("|");
+        }
+
+        // Prints command list and exits
+        static void PrintHelp()
+        {
+            Console.WriteLine("Command list:");
+            Console.WriteLine(" {0, -21} {1, -10}", "-h|--help", "Show command list.");
+            Console.WriteLine(" {0, -21} {1, -10}", "--save", "Save model with autogenerated name.");
+            Console.WriteLine(" {0, -21} {1, -10}", "--save [filename]", "Save model with the given name.");
+            Console.WriteLine(" {0, -21} {1, -10}\n", "--load [filename]", "Load model from file.");
         }
     }
 }

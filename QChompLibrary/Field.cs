@@ -27,7 +27,7 @@ namespace QChompLibrary
         }
 
 
-        // Custom constructor for creating a field and manually setting 'poisoned' cell, Player1's still the default player
+        // Used for creating a game field and manually setting 'poisoned' cell, Player1's still the default player
         public Field(int height, int width, (int, int) poisoned)
         {
             _grid = new int[height, width];

@@ -11,8 +11,8 @@ namespace QChompLibrary
     public class AI
     {
         Dictionary<(int[,] State, (int Height, int Width) Action), double> _qDict;  // Dict of q-values for any state and action
-        double _alpha = 0.50;                                              // Learning rate coefficient
-        double _epsilon = 0.10;                                            // Eps-prob for random move choice (encourages expolartion)
+        readonly double _alpha = 0.50;                                              // Learning rate coefficient
+        readonly double _epsilon = 0.10;                                            // Eps-prob for random move choice (encourages expolartion)
 
 
         #region Constructors
@@ -21,12 +21,20 @@ namespace QChompLibrary
             _qDict = new Dictionary<(int[,] State, (int Height, int Width) Action), double>(new QKeyComparer());
         }
 
-
+        // Used for training purposes
         public AI(double alpha, double epsilon)
         {
             _qDict = new Dictionary<(int[,] State, (int Height, int Width) Action), double>(new QKeyComparer());
             _alpha = alpha;
             _epsilon = epsilon;
+        }
+
+        // Used for loading model from file
+        public AI(double alpha, double epsilon, Dictionary<(int[,] State, (int Height, int Width) Action), double> qDict)
+        {
+            _alpha = alpha;
+            _epsilon = epsilon;
+            _qDict = qDict;
         }
         #endregion
 
@@ -34,9 +42,8 @@ namespace QChompLibrary
 
         #region Properties
         public int Transitions => _qDict.Count;
-        public double LearningRate { get => _alpha; set => _alpha = value; }
-        public double Epsilon { get => _epsilon; set => _epsilon = value; }
-        public Dictionary<(int[,] State, (int Height, int Width) Action), double> QDict { set => _qDict = value; }
+        public double LearningRate { get => _alpha; }
+        public double Epsilon { get => _epsilon; }
         #endregion
 
 
@@ -137,10 +144,11 @@ namespace QChompLibrary
 
 
         // Saves current model as binary file with "<height>_<width>_<qDict.Count>_model.dat" filename. Returns saved model filename or null if any error occurred
-        public string SaveModel(Field field, int iterCount)
+        // Custom filename might be used as well 
+        public string SaveModel(Field field, int iterCount, string path = null)
         {
             // Get model filename in format of "<height>_<width>_<qDict.Count>_model.dat"
-            string filename = $"{field.GridHeight}_{field.GridWidth}_{_qDict.Count}_model.dat";
+            string filename = (path != null) ? (path) : ($"{field.GridHeight}_{field.GridWidth}_{_qDict.Count}_model.dat");
 
             BinaryFormatter formatter = new BinaryFormatter();
             
@@ -153,7 +161,7 @@ namespace QChompLibrary
                 writer.Write(field.PoisonedCell.Width);
                 writer.Write(_alpha);                                      // Learning rate
                 writer.Write(_epsilon);                                    // Epsilon rate
-                //writer.Write(_qDict.Count);                                // Number of Q-dict key-value pairs
+                writer.Write(iterCount);                                   // Number of training games
 
                 try
                 {
@@ -170,8 +178,8 @@ namespace QChompLibrary
         }
 
 
-        // Loads model file and returns AI instance and game field
-        public static (AI, Field) LoadModel(string path)
+        // Loads model file and returns AI instance, game field and number of training iterations
+        public static (AI, Field, int) LoadModel(string path)
         {
             BinaryFormatter formatter = new BinaryFormatter();
 
@@ -185,12 +193,13 @@ namespace QChompLibrary
                 Field field = new Field(height, width, poisonedCell);
 
                 // Load model info
-                AI model = new AI();
-                model.LearningRate = reader.ReadDouble();
-                model.Epsilon = reader.ReadDouble();
-                model.QDict = (Dictionary<(int[,] State, (int Height, int Width) Action), double>)formatter.Deserialize(fs);
+                double learningRate = reader.ReadDouble();
+                double epsilon = reader.ReadDouble();
+                int iterations = reader.ReadInt32();
+                var qDict = (Dictionary<(int[,] State, (int Height, int Width) Action), double>)formatter.Deserialize(fs);
+                AI model = new AI(learningRate, epsilon, qDict);
 
-                return (model, field);
+                return (model, field, iterations);
             }
         }
         #endregion
