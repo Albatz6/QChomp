@@ -5,6 +5,7 @@ using System.Text;
 namespace QChompLibrary
 {
     // Custom key comparer for dictionary where key consists of a state (2D-array) and a tuple action (q-value dictionary)
+    [Serializable]
     public class QKeyComparer : IEqualityComparer<(int[,] State, (int Height, int Width) Action)>
     {
         public bool Equals((int[,] State, (int Height, int Width) Action) x, (int[,] State, (int Height, int Width) Action) y)

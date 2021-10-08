@@ -1,5 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 
 namespace QChompLibrary
@@ -7,8 +11,8 @@ namespace QChompLibrary
     public class AI
     {
         Dictionary<(int[,] State, (int Height, int Width) Action), double> _qDict;  // Dict of q-values for any state and action
-        readonly double _alpha = 0.5;                                               // Learning rate coefficient
-        readonly double _epsilon = 0.15;                                            // Eps-prob for random move choice (encourages expolartion)
+        double _alpha = 0.50;                                              // Learning rate coefficient
+        double _epsilon = 0.10;                                            // Eps-prob for random move choice (encourages expolartion)
 
 
         #region Constructors
@@ -27,9 +31,14 @@ namespace QChompLibrary
         #endregion
 
 
+
         #region Properties
         public int Transitions => _qDict.Count;
+        public double LearningRate { get => _alpha; set => _alpha = value; }
+        public double Epsilon { get => _epsilon; set => _epsilon = value; }
+        public Dictionary<(int[,] State, (int Height, int Width) Action), double> QDict { set => _qDict = value; }
         #endregion
+
 
 
         #region Methods
@@ -116,6 +125,7 @@ namespace QChompLibrary
             }
         }
 
+
         // Updates current model's q-values
         public void UpdateModel(int[,] oldState, (int, int) action, int[,] newState, double reward)
         {
@@ -123,6 +133,65 @@ namespace QChompLibrary
             double bestFutureReward = BestFutureReward(newState);
 
             UpdateQValue(oldState, action, oldQValue, reward, bestFutureReward);
+        }
+
+
+        // Saves current model as binary file with "<height>_<width>_<qDict.Count>_model.dat" filename. Returns saved model filename or null if any error occurred
+        public string SaveModel(Field field, int iterCount)
+        {
+            // Get model filename in format of "<height>_<width>_<qDict.Count>_model.dat"
+            string filename = $"{field.GridHeight}_{field.GridWidth}_{_qDict.Count}_model.dat";
+
+            BinaryFormatter formatter = new BinaryFormatter();
+            
+            using (FileStream fs = File.OpenWrite(filename))
+            using (BinaryWriter writer = new BinaryWriter(fs))
+            {
+                writer.Write(field.GridHeight);                            // Height
+                writer.Write(field.GridWidth);                             // Width
+                writer.Write(field.PoisonedCell.Height);                   // Poisoned cell coordinates
+                writer.Write(field.PoisonedCell.Width);
+                writer.Write(_alpha);                                      // Learning rate
+                writer.Write(_epsilon);                                    // Epsilon rate
+                //writer.Write(_qDict.Count);                                // Number of Q-dict key-value pairs
+
+                try
+                {
+                    formatter.Serialize(fs, _qDict);
+                }
+                catch (SerializationException e)
+                {
+                    Console.WriteLine("Failed to serialize. Reason: " + e.Message);
+                    filename = null;
+                }
+
+                return filename;
+            }
+        }
+
+
+        // Loads model file and returns AI instance and game field
+        public static (AI, Field) LoadModel(string path)
+        {
+            BinaryFormatter formatter = new BinaryFormatter();
+
+            using (FileStream fs = File.OpenRead(path))
+            using (BinaryReader reader = new BinaryReader(fs))
+            {
+                // Load game field info
+                int height = reader.ReadInt32();
+                int width = reader.ReadInt32();
+                (int Height, int Width) poisonedCell = (reader.ReadInt32(), reader.ReadInt32());
+                Field field = new Field(height, width, poisonedCell);
+
+                // Load model info
+                AI model = new AI();
+                model.LearningRate = reader.ReadDouble();
+                model.Epsilon = reader.ReadDouble();
+                model.QDict = (Dictionary<(int[,] State, (int Height, int Width) Action), double>)formatter.Deserialize(fs);
+
+                return (model, field);
+            }
         }
         #endregion
     }

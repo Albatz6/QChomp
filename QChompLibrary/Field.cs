@@ -10,15 +10,16 @@ namespace QChompLibrary
 
         readonly (int Height, int Width) _poisoned;        // Keeps poisoned cell position    
         int[,] _grid;                                      // Represents game grid
-        int _player;                                      // Keeps current move player (Player1 = true, Player2 = false)
+        int _player;                                       // Keeps current move player (Player1 = true, Player2 = false)
         int _winner;                                       // Represents game winner
 
 
+
         #region Constructors
-        // Default init with 10x12 field where the upperleft cell is poisoned and Player1 is the default player
+        // Default init with 8x12 field where the upperleft cell is poisoned and Player1 is the default player
         public Field()
         {
-            _grid = new int[6, 8];
+            _grid = new int[8, 12];
             _grid[0, 0] = (int)Conditions.Poisoned;
             _poisoned = (0, 0);
             _player = (int)Players.Player1;
@@ -38,13 +39,16 @@ namespace QChompLibrary
         #endregion
 
 
+
         #region Properties
-        public int[,] Grid => _grid;
-        public int GridHeight => _grid.GetLength(0);
-        public int GridWidth => _grid.GetLength(1);
-        public int Player => _player;
-        public int Winner => _winner;
+        public int[,] Grid                          => _grid;
+        public int GridHeight                       => _grid.GetLength(0);
+        public int GridWidth                        => _grid.GetLength(1);
+        public (int Height, int Width) PoisonedCell => _poisoned;
+        public int Player                           => _player;
+        public int Winner                           => _winner;
         #endregion
+
 
 
         #region Methods

@@ -131,14 +131,6 @@ namespace ConsoleQChomp
 
             for (int i = 0; i < iterations; i++)
             {
-                if ((i + 1) % 1000 == 0)
-                {
-                    int transitions = player.Transitions;
-
-                    Console.WriteLine($"Training game {((i + 1) / 1000)}k... ({transitions} transitions, {transitions - delta} delta)");
-                    delta = player.Transitions;
-                }
-
                 // Initialize new game
                 Field game = new Field(h, w, (0, 0));
 
@@ -177,6 +169,15 @@ namespace ConsoleQChomp
                     {
                         player.UpdateModel(last[game.Player].State, last[game.Player].Action, newState, 0);
                     }
+                }
+
+                // Training stats output
+                if ((i + 1) % 1000 == 0)
+                {
+                    int transitions = player.Transitions;
+
+                    Console.WriteLine($"Training game {((i + 1) / 1000)}k... ({transitions} transitions, {transitions - delta} delta)");
+                    delta = player.Transitions;
                 }
             }
 
