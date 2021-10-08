@@ -147,8 +147,8 @@ namespace QChompLibrary
         // Custom filename might be used as well 
         public string SaveModel(Field field, int iterCount, string path = null)
         {
-            // Get model filename in format of "<height>_<width>_<qDict.Count>_model.dat"
-            string filename = (path != null) ? (path) : ($"{field.GridHeight}_{field.GridWidth}_{_qDict.Count}_model.dat");
+            // Get model filename in format of "<height>_<width>_<qDict.Count>_modelv1.dat"
+            string filename = (path != null) ? (path) : ($"{field.GridHeight}_{field.GridWidth}_{_qDict.Count}_modelv1.dat");
 
             BinaryFormatter formatter = new BinaryFormatter();
             

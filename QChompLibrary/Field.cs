@@ -133,6 +133,24 @@ namespace QChompLibrary
                 _winner = (_player == (int)Players.Player1) ? ((int)Players.Player2) : ((int)Players.Player1);
             }*/
         }
+
+
+        // Resets game to the initial state
+        public void Reset()
+        {
+            // Resetting game field
+            for (int i = 0; i < _grid.GetLength(0); i++)
+            {
+                for (int j = 0; j < _grid.GetLength(1); j++)
+                {
+                    _grid[i, j] = ((i, j) == _poisoned) ? ((int)Conditions.Poisoned) : ((int)Conditions.Blank);
+                }
+            }
+
+            // Resetting player and winner
+            _player = (int)Players.Player1;
+            _winner = (int)Players.Blank;
+        }
         #endregion
     }
 }

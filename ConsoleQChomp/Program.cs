@@ -127,7 +127,7 @@ namespace ConsoleQChomp
 
                 if (saveFile)
                 {
-                    ai.SaveModel(gameField, iter);
+                    ai.SaveModel(gameField, iter, path);
                 }
             }
 
@@ -160,6 +160,7 @@ namespace ConsoleQChomp
                         {
                             validAnswer = true;
                             ai.SaveModel(gameField, iter, path);
+                            saveFile = true;
                         }
                         else if (input == "n" || input == "no")
                         {
@@ -179,6 +180,7 @@ namespace ConsoleQChomp
                     {
                         validAnswer = true;
                         gameField.Reset();
+                        Console.WriteLine("\n");
                     }
                     else if (input == "n" || input == "no")
                     {
