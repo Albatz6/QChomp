@@ -1,10 +1,27 @@
 ﻿@page
 @model IndexModel
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery
 @{
     ViewData["Title"] = "Home page";
+    var token = antiforgery.GetAndStoreTokens(HttpContext).RequestToken;
 }
 
+<input type="hidden" id="RequestVerificationToken" name="RequestVerificationToken" value="@token">
+
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    <h1 class="display-4 mb-4">QChomp</h1>
+
+    <div class="btn-group" role="group" id="difficulty-selection">
+        <input type="radio" class="btn-check" name="diff-radio" id="radio-diff-easy" value="0" autocomplete="off" checked>
+        <label class="btn btn-outline-primary" for="radio-diff-easy">Easy</label>
+
+        <input type="radio" class="btn-check" name="diff-radio" id="radio-diff-medium" value="1" autocomplete="off">
+        <label class="btn btn-outline-primary" for="radio-diff-medium">Medium</label>
+
+        <input type="radio" class="btn-check" name="diff-radio" id="radio-diff-hard" value="2" autocomplete="off">
+        <label class="btn btn-outline-primary" for="radio-diff-hard">Hard</label>
+    </div>
+
+    <table class="grid"></table>
+    <div class="game-info"></div>
 </div>
