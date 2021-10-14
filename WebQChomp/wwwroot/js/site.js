@@ -7,10 +7,11 @@
 // 0 - easy, 1 - medium, 2 - hard
 var difficulty = 0;
 var userMove = true;
+var winner = 0;
 
 
 // Handle difficulty radio button group switching
-var selector = document.getElementById('difficulty-selection');
+/*var selector = document.getElementById('difficulty-selection');
 selector.addEventListener('click', ({ target }) => {
     if (target.getAttribute('name') === 'diff-radio') {
         difficulty = parseInt(target.value);
@@ -18,22 +19,49 @@ selector.addEventListener('click', ({ target }) => {
 
         // TODO: reset game board and switch model
     }
-});
+});*/
 
 // Create grid and handle it
 var lastClicked;
-var grid = clickableGrid(6, 9, function (el, row, col) {
+var grid = clickableGrid(6, 9, async function (el, row, col) {
     console.log("You clicked on element:", el);
     console.log("You clicked on row:", row);
     console.log("You clicked on col:", col);
 
-    el.className = 'clicked';
-    if (lastClicked) lastClicked.className = '';
-    lastClicked = el;
+    //Paint chosen area
+    function paint(x, y) {
+        for (var r = x; r < 6; ++r) {
+            for (var c = y; c < 9; ++c) {
+                var cell = document.getElementById(`cell-${r * 9 + c}`);
+                if (cell.bgColor !== 'blue') cell.bgColor = 'blue';
+            }
+        }
+    }
 
-    if (userMove) {
+    // Handle user move
+    if (userMove && el.bgColor !== 'blue') {
+        paint(row, col);
+
+        // Let AI make it's move
         userMove = false;
-        var move = makeMove(row, col);
+        var move = await makeMove(row, col);
+        console.log(move);
+
+        // 0 - game continues, 1 - user won, 2 - AI won
+        switch (move[2]) {
+            case 1:
+                document.getElementById("game-info").innerHTML = "You've won!";
+                userMove = false;
+                break;
+            case 2:
+                document.getElementById("game-info").innerHTML = "AI won!";
+                userMove = false;
+                break;
+            default:
+                paint(move[0], move[1]);
+                userMove = true;
+                break;
+        }
     }
 });
 
@@ -67,11 +95,11 @@ function clickableGrid(rows, cols, callback) {
 }
 
 // AJAX request that sends the user move and returns AI's
-function makeMove(row, col) {
+async function makeMove(row, col) {
     var move = []
     var token = document.getElementById('RequestVerificationToken').value;
 
-    fetch('/?handler=Action', {
+    const data = await fetch('/?handler=Action', {
         method: 'POST',
         headers: {
             "RequestVerificationToken": token,
@@ -79,14 +107,47 @@ function makeMove(row, col) {
         },
         body: JSON.stringify({
             x: row,
-            y: col
+            y: col,
+            reset: false
         })
     })
-        .then(response => response.json)
-        .then(result => {
-            console.log(result);
-            // TODO: retrieve AI's move coords from response
-        }) 
+        .then(response => response.json());
+
+    move.push(data.height);
+    move.push(data.width);
+    move.push(data.winner);
 
     return move;
+}
+
+// Resetting game grid
+async function reset() {
+    userMove = true;
+    document.getElementById("game-info").innerHTML = "Game in progress.";
+
+    for (var r = 0; r < 6; ++r) {
+        for (var c = 0; c < 9; ++c) {
+            var cell = document.getElementById(`cell-${r * 9 + c}`);
+            if (r === 0 && c === 0) {
+                cell.bgColor = 'red';
+            } else {
+                cell.bgColor = 'white';
+            }
+        }
+    }
+
+    var token = document.getElementById('RequestVerificationToken').value;
+    await fetch('/?handler=Action', {
+        method: 'POST',
+        headers: {
+            "RequestVerificationToken": token,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            x: -1,
+            y: -1,
+            reset: true
+        })
+    })
+        .then(response => response.json());
 }

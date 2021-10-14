@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 
 namespace QChompLibrary
@@ -35,6 +36,17 @@ namespace QChompLibrary
             _poisoned = poisoned;
             _player = (int)Players.Player1;
             _winner = (int)Players.Blank;
+        }
+
+
+        [JsonConstructor]
+        public Field(int[,] grid, (int, int) poisoned, int player, int winner)
+        {
+            _grid = grid;
+            _grid[poisoned.Item1, poisoned.Item2] = (int)Conditions.Poisoned;
+            _poisoned = poisoned;
+            _player = player;
+            _winner = winner;
         }
         #endregion
 

@@ -10,22 +10,38 @@ using System.Text.Json;
 using System.Linq;
 using System.Threading.Tasks;
 using System.IO;
+using System.Diagnostics;
+using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
 
 namespace WebQChomp.Pages
 {
+    public static class SessionExtensions
+    {
+        public static void SetObject(this ISession session, string key, object value)
+        {
+            session.SetString(key, JsonConvert.SerializeObject(value));
+        }
+
+        public static T GetObject<T>(this ISession session, string key)
+        {
+            var value = session.GetString(key);
+            return value == null ? default(T) : JsonConvert.DeserializeObject<T>(value);
+        }
+    }
+
     public class Input
     {
         public int X { get; set; }
         public int Y { get; set; }
+        public bool Reset { get; set; }
     }
 
     public class IndexModel : PageModel
     {
         private readonly IWebHostEnvironment _appEnvironment;
-        private Field _gameField = new Field(6, 9, (0, 0));
-        private AI _easyModel = Train(500, 6, 9);
-        private AI _mediumModel = Train(1000, 6, 9);
-        private AI _hardModel = Train(2500, 6, 9);
+        //private Field _gameField = new Field(6, 9, (0, 0));
+        //private AI _easyModel = Train(500, 6, 9);
 
         public IndexModel(IWebHostEnvironment appEnvironment)
         {
@@ -33,15 +49,63 @@ namespace WebQChomp.Pages
             //_model = AI.LoadModel(Path.Combine(_appEnvironment.WebRootPath, "6_9_1713_modelv1.dat"));
         }
 
+        static void PrintField(int[,] field)
+        {
+            for (int i = 0; i < 6; i++)
+            {
+                for (int j = 0; j < 9; j++)
+                {
+                    Debug.Write($"{field[i, j]} ");
+                }
+
+                Debug.WriteLine(" ");
+            }
+        }
+
         public JsonResult OnPostAction([FromBody]Input json)
         {
-            _gameField.MakeMove((json.X, json.Y));
-            (int Height, int Width) action = _easyModel.ChooseAction(_gameField.Grid, true);
-            return new JsonResult(new { Height = action.Height, Width = action.Width });
+            //var field = HttpContext.Session.GetObject<Field>("_Field");
+            //var model = HttpContext.Session.GetObject<AI>("_Model");
+            var field = new Field();
+            var model = Train(500, 6, 9);
+
+            // Make user move
+            var fieldValue = HttpContext.Session.GetString("_Field");
+            field = (fieldValue == null || json.Reset) ? new Field(6, 9, (0, 0)) : JsonConvert.DeserializeObject<Field>(fieldValue);
+
+            if (!json.Reset)
+            {
+                field.MakeMove((json.X, json.Y));
+                //Debug.WriteLine("user move");
+                //PrintField(field.Grid);
+
+                // Make AI move
+                (int Height, int Width) action = model.ChooseAction(field.Grid, false);
+                int winner = field.Winner;
+
+                //
+                if (action.Height != -1 && action.Width != -1)
+                {
+                    field.MakeMove(action);
+                    //Debug.WriteLine("AI move");
+                    //PrintField(field.Grid);
+                }
+                else
+                {
+                    field = new Field(6, 9, (0, 0));
+                }
+
+                HttpContext.Session.SetString("_Field", JsonConvert.SerializeObject(field));
+
+                return new JsonResult(new { Height = action.Height, Width = action.Width, Winner = winner });
+            }
+
+            return new JsonResult(new { });
         }
 
         static AI Train(int iterations, int h, int w)
         {
+            Debug.WriteLine("training");
             int delta = 0;
             AI player = new AI();
 
