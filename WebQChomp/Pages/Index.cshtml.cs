@@ -13,9 +13,11 @@ using System.IO;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace WebQChomp.Pages
 {
+    // Used for JSON serialization/deserialization when saving complex objects to the user's session
     public static class SessionExtensions
     {
         public static void SetObject(this ISession session, string key, object value)
@@ -30,6 +32,7 @@ namespace WebQChomp.Pages
         }
     }
 
+    // User input class
     public class Input
     {
         public int X { get; set; }
@@ -39,16 +42,14 @@ namespace WebQChomp.Pages
 
     public class IndexModel : PageModel
     {
-        private readonly IWebHostEnvironment _appEnvironment;
-        //private Field _gameField = new Field(6, 9, (0, 0));
-        //private AI _easyModel = Train(500, 6, 9);
+        private readonly IMemoryCache _cache;
 
-        public IndexModel(IWebHostEnvironment appEnvironment)
+        public IndexModel(IMemoryCache cache)
         {
-            _appEnvironment = appEnvironment;
-            //_model = AI.LoadModel(Path.Combine(_appEnvironment.WebRootPath, "6_9_1713_modelv1.dat"));
+            _cache = cache;
         }
 
+        // Used for debug
         static void PrintField(int[,] field)
         {
             for (int i = 0; i < 6; i++)
@@ -62,54 +63,62 @@ namespace WebQChomp.Pages
             }
         }
 
+        // AJAX-post handler
         public JsonResult OnPostAction([FromBody]Input json)
         {
-            //var field = HttpContext.Session.GetObject<Field>("_Field");
-            //var model = HttpContext.Session.GetObject<AI>("_Model");
-            var field = new Field();
-            var model = Train(550, 6, 9);
-
-            // Make user move
-            var fieldValue = HttpContext.Session.GetString("_Field");
-            field = (fieldValue == null || json.Reset) ? new Field(6, 9, (0, 0)) : JsonConvert.DeserializeObject<Field>(fieldValue);
-
-            if (!json.Reset)
+            // Try to get AI model from cache, otherwise train it and add to cache
+            AI model;
+            if (!_cache.TryGetValue("6_9_700_model", out model))
             {
-                field.MakeMove((json.X, json.Y));
-                Debug.WriteLine("user move");
-                PrintField(field.Grid);
+                model = Train(700, 6, 9);
 
-                // Let AI choose a move
-                (int Height, int Width) action = (-1, -1);
-                if (field.Winner == 0)
-                {
-                    action = model.ChooseAction(field.Grid, true);
-                }
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                    .SetSlidingExpiration(TimeSpan.FromHours(24));
 
-                // Make move if possible
-                if (action.Height != -1 && action.Width != -1)
-                {
-                    field.MakeMove(action);
-                    Debug.WriteLine("AI move");
-                    PrintField(field.Grid);
-                }
-
-                // Update winner and reset field if the game's ended
-                int winner = 0;
-                if (field.Winner != 0)
-                {
-                    winner = field.Winner;
-                    field = new Field(6, 9, (0, 0));
-                }
-
-                HttpContext.Session.SetString("_Field", JsonConvert.SerializeObject(field));
-
-                return new JsonResult(new { Height = action.Height, Width = action.Width, Winner = winner });
+                _cache.Set("6_9_700_model", model, cacheEntryOptions);
             }
 
-            return new JsonResult(new { });
+            // Try to get game field from user session
+            var fieldValue = HttpContext.Session.GetString("_Field");
+            var field = (fieldValue == null || json.Reset) ? new Field(6, 9, (0, 0)) : JsonConvert.DeserializeObject<Field>(fieldValue);
+
+            // In case user user decides to reset the game, return without making a move
+            if (json.Reset) return new JsonResult(new { });
+
+            // Make user move and wait a bit
+            field.MakeMove((json.X, json.Y));
+            System.Threading.Thread.Sleep(175);
+            //Debug.WriteLine("user move");
+            //PrintField(field.Grid);
+
+            // Let AI choose a move
+            (int Height, int Width) action = (-1, -1);
+            if (field.Winner == 0)
+            {
+                action = model.ChooseAction(field.Grid, true);
+            }
+
+            // Make move if possible
+            if (action.Height != -1 && action.Width != -1)
+            {
+                field.MakeMove(action);
+                //Debug.WriteLine("AI move");
+                //PrintField(field.Grid);
+            }
+
+            // Update winner and reset game field if the game's ended
+            int winner = 0;
+            if (field.Winner != 0)
+            {
+                winner = field.Winner;
+                field = new Field(6, 9, (0, 0));
+            }
+
+            HttpContext.Session.SetString("_Field", JsonConvert.SerializeObject(field));
+            return new JsonResult(new { Height = action.Height, Width = action.Width, Winner = winner });
         }
 
+        // AI training function
         static AI Train(int iterations, int h, int w)
         {
             int delta = 0;
