@@ -188,13 +188,13 @@ namespace WebQChomp.Pages
                     break;
 
                 case 1:
-                    modelName = "6_9_1100_model";
-                    iterations = 1100;
+                    modelName = "6_9_2000_model";
+                    iterations = 2000;
                     break;
 
                 case 2:
-                    modelName = "6_9_4000_model";
-                    iterations = 4000;
+                    modelName = "6_9_6000_model";
+                    iterations = 6000;
                     break;
 
                 default: break;

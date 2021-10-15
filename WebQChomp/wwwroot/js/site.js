@@ -20,7 +20,7 @@ selector.addEventListener('click', ({ target }) => {
 });
 
 // Create grid and handle it
-var lastClicked;
+var lastGameState;
 var grid = clickableGrid(6, 9, async function (el, row, col) {
     console.log("You clicked on element:", el);
     console.log("You clicked on row:", row);
@@ -62,6 +62,10 @@ var grid = clickableGrid(6, 9, async function (el, row, col) {
                 userMove = true;
                 break;
         }
+    }
+    else if (lastGameState !== 0 && document.getElementById('cell-0').bgColor === 'blue'){
+        // Reset game if user clicked on the finished game grid
+        reset();
     }
 });
 
