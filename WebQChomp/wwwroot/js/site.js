@@ -45,7 +45,10 @@ var grid = clickableGrid(6, 9, async function (el, row, col) {
         // Let AI make it's move
         userMove = false;
         var move = await makeMove(row, col);
-        console.log(move);
+        if (move[0] != -1 && move[1] != -1) {
+            paint(move[0], move[1]);
+        }
+        console.log("AI move:", move);
 
         // 0 - game continues, 1 - user won, 2 - AI won
         switch (move[2]) {
@@ -58,7 +61,6 @@ var grid = clickableGrid(6, 9, async function (el, row, col) {
                 userMove = false;
                 break;
             default:
-                paint(move[0], move[1]);
                 userMove = true;
                 break;
         }
@@ -125,6 +127,7 @@ async function reset() {
     userMove = true;
     document.getElementById("game-info").innerHTML = "Game in progress.";
 
+    // Reset grid colors
     for (var r = 0; r < 6; ++r) {
         for (var c = 0; c < 9; ++c) {
             var cell = document.getElementById(`cell-${r * 9 + c}`);
@@ -136,6 +139,7 @@ async function reset() {
         }
     }
 
+    // Send field reset ajax-post
     var token = document.getElementById('RequestVerificationToken').value;
     await fetch('/?handler=Action', {
         method: 'POST',

@@ -67,7 +67,7 @@ namespace WebQChomp.Pages
             //var field = HttpContext.Session.GetObject<Field>("_Field");
             //var model = HttpContext.Session.GetObject<AI>("_Model");
             var field = new Field();
-            var model = Train(500, 6, 9);
+            var model = Train(550, 6, 9);
 
             // Make user move
             var fieldValue = HttpContext.Session.GetString("_Field");
@@ -76,22 +76,25 @@ namespace WebQChomp.Pages
             if (!json.Reset)
             {
                 field.MakeMove((json.X, json.Y));
-                //Debug.WriteLine("user move");
-                //PrintField(field.Grid);
+                Debug.WriteLine("user move");
+                PrintField(field.Grid);
 
                 // Make AI move
-                (int Height, int Width) action = model.ChooseAction(field.Grid, false);
-                int winner = field.Winner;
+                (int Height, int Width) action = model.ChooseAction(field.Grid, true);
 
-                //
+                // Make move if it's possible
                 if (action.Height != -1 && action.Width != -1)
                 {
                     field.MakeMove(action);
-                    //Debug.WriteLine("AI move");
-                    //PrintField(field.Grid);
+                    Debug.WriteLine("AI move");
+                    PrintField(field.Grid);
                 }
-                else
+
+                // Update winner and reset field if the game's ended
+                int winner = 0;
+                if (field.Winner != 0)
                 {
+                    winner = field.Winner;
                     field = new Field(6, 9, (0, 0));
                 }
 
@@ -105,7 +108,6 @@ namespace WebQChomp.Pages
 
         static AI Train(int iterations, int h, int w)
         {
-            Debug.WriteLine("training");
             int delta = 0;
             AI player = new AI();
 
