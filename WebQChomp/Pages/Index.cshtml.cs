@@ -79,10 +79,14 @@ namespace WebQChomp.Pages
                 Debug.WriteLine("user move");
                 PrintField(field.Grid);
 
-                // Make AI move
-                (int Height, int Width) action = model.ChooseAction(field.Grid, true);
+                // Let AI choose a move
+                (int Height, int Width) action = (-1, -1);
+                if (field.Winner == 0)
+                {
+                    action = model.ChooseAction(field.Grid, true);
+                }
 
-                // Make move if it's possible
+                // Make move if possible
                 if (action.Height != -1 && action.Width != -1)
                 {
                     field.MakeMove(action);
