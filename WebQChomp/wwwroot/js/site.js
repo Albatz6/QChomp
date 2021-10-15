@@ -11,15 +11,13 @@ var winner = 0;
 
 
 // Handle difficulty radio button group switching
-/*var selector = document.getElementById('difficulty-selection');
+var selector = document.getElementById('difficulty-selection');
 selector.addEventListener('click', ({ target }) => {
     if (target.getAttribute('name') === 'diff-radio') {
         difficulty = parseInt(target.value);
         console.log("Difficulty:", difficulty);
-
-        // TODO: reset game board and switch model
     }
-});*/
+});
 
 // Create grid and handle it
 var lastClicked;
@@ -44,7 +42,7 @@ var grid = clickableGrid(6, 9, async function (el, row, col) {
 
         // Let AI make it's move
         userMove = false;
-        var move = await makeMove(row, col);
+        var move = await makeMove(row, col, difficulty);
         if (move[0] != -1 && move[1] != -1) {
             paint(move[0], move[1]);
         }
@@ -67,7 +65,7 @@ var grid = clickableGrid(6, 9, async function (el, row, col) {
     }
 });
 
-document.body.appendChild(grid);
+document.getElementById('game-grid').appendChild(grid);
 
 // Grid forming function
 function clickableGrid(rows, cols, callback) {
@@ -97,7 +95,7 @@ function clickableGrid(rows, cols, callback) {
 }
 
 // AJAX request that sends the user move and returns AI's
-async function makeMove(row, col) {
+async function makeMove(row, col, difficulty) {
     var move = []
     var token = document.getElementById('RequestVerificationToken').value;
 
@@ -110,6 +108,7 @@ async function makeMove(row, col) {
         body: JSON.stringify({
             x: row,
             y: col,
+            diff: difficulty,
             reset: false
         })
     })
@@ -150,6 +149,7 @@ async function reset() {
         body: JSON.stringify({
             x: -1,
             y: -1,
+            diff: -1,
             reset: true
         })
     })

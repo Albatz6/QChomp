@@ -37,6 +37,7 @@ namespace WebQChomp.Pages
     {
         public int X { get; set; }
         public int Y { get; set; }
+        public int Diff { get; set; }
         public bool Reset { get; set; }
     }
 
@@ -66,17 +67,8 @@ namespace WebQChomp.Pages
         // AJAX-post handler
         public JsonResult OnPostAction([FromBody]Input json)
         {
-            // Try to get AI model from cache, otherwise train it and add to cache
-            AI model;
-            if (!_cache.TryGetValue("6_9_700_model", out model))
-            {
-                model = Train(700, 6, 9);
-
-                var cacheEntryOptions = new MemoryCacheEntryOptions()
-                    .SetSlidingExpiration(TimeSpan.FromHours(24));
-
-                _cache.Set("6_9_700_model", model, cacheEntryOptions);
-            }
+            // Get AI model
+            var model = ModelCache(json.Diff);
 
             // Try to get game field from user session
             var fieldValue = HttpContext.Session.GetString("_Field");
@@ -178,6 +170,48 @@ namespace WebQChomp.Pages
 
             Console.WriteLine("Done training\n");
             return player;
+        }
+
+        // AI model retrieval or caching
+        AI ModelCache(int diff)
+        {
+            AI model;
+            string modelName = "6_9_700_model";
+            int iterations = 700;
+
+            // Set model name according to difficulty (0 - easy, 2 - hard)
+            switch (diff)
+            {
+                case 0:
+                    modelName = "6_9_700_model";
+                    iterations = 700;
+                    break;
+
+                case 1:
+                    modelName = "6_9_1100_model";
+                    iterations = 1100;
+                    break;
+
+                case 2:
+                    modelName = "6_9_4000_model";
+                    iterations = 4000;
+                    break;
+
+                default: break;
+            }
+
+            // Try to get cache, otherwise write model to cache
+            if (!_cache.TryGetValue(modelName, out model))
+            {
+                model = Train(iterations, 6, 9);
+
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                    .SetSlidingExpiration(TimeSpan.FromHours(24));
+
+                _cache.Set(modelName, model, cacheEntryOptions);
+            }
+
+            return model;
         }
     }
 }
