@@ -74,8 +74,12 @@ namespace WebQChomp.Pages
             var fieldValue = HttpContext.Session.GetString("_Field");
             var field = (fieldValue == null || json.Reset) ? new Field(6, 9, (0, 0)) : JsonConvert.DeserializeObject<Field>(fieldValue);
 
-            // In case user user decides to reset the game, return without making a move
-            if (json.Reset) return new JsonResult(new { });
+            // In case user user decides to reset the game, delete field from session and return without making a move
+            if (json.Reset)
+            {
+                HttpContext.Session.Clear();
+                return new JsonResult(new { });
+            }
 
             // Make user move and wait a bit
             field.MakeMove((json.X, json.Y));
@@ -90,8 +94,9 @@ namespace WebQChomp.Pages
                 // Don't use epsilon-prob random move when on hard difficulty 
                 bool eps = (json.Diff == 2) ? false : true;
 
-                // Limit grid usage per move to 5 maximum
-                action = model.ChooseAction(field.Grid, eps, 5);
+                // Limit grid usage per move in range from 1 to 6
+                Random rand = new Random();
+                action = model.ChooseAction(field.Grid, eps, rand.Next(1, 7));
             }
 
             // Make move if possible
