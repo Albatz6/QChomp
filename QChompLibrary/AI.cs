@@ -72,7 +72,7 @@ namespace QChompLibrary
             double newInfo = _alpha * (reward + futureRewards - oldQValue);
             _qDict[(state, action)] = oldQValue + newInfo;
         }
-
+        
 
         // Returns the best reward possible given the state
         double BestFutureReward(int[,] state)
@@ -101,17 +101,87 @@ namespace QChompLibrary
         }
 
 
-        // Returns an action tuple of (int, int) to take.
-        public (int Height, int Width) ChooseAction(int[,] state, bool epsilon)
+        // Returns how many cells become used after the potential move that could be made
+        int MoveAreaSquareGain(int[,] state, (int Height, int Width) action)
         {
+            int[,] newState = new int[state.GetLength(0), state.GetLength(1)];
+            Array.Copy(state, 0, newState, 0, state.Length);
+
+            // Mark potential move area
+            for (int i = action.Height; i < newState.GetLength(0); i++)
+            {
+                for (int j = action.Width; j < newState.GetLength(1); j++)
+                {
+                    newState[i, j] = (int)Field.Conditions.Used;
+                }
+            }
+
+            // Count how many cells are used in both states
+            int prevSquare = 0, newSquare = 0;
+            for (int i = 0; i < newState.GetLength(0); i++)
+            {
+                for (int j = 0; j < newState.GetLength(1); j++)
+                {
+                    if (state[i, j] == (int)Field.Conditions.Used) prevSquare++;
+                    if (newState[i, j] == (int)Field.Conditions.Used) newSquare++;
+                }
+            }
+
+            return newSquare - prevSquare;
+        }
+
+
+        // Returns the number of free cells in a given state
+        int GetFreeArea(int[,] state)
+        {
+            int area = 0;
+
+            for (int i = 0; i < state.GetLength(0); i++)
+            {
+                for (int j = 0; j < state.GetLength(1); j++)
+                {
+                    if (state[i, j] == (int)Field.Conditions.Used) area++; 
+                }
+            }
+
+            return state.GetLength(0) * state.GetLength(1) - area;
+        }
+
+
+        // Returns an action tuple of (int, int) to take.
+        // epsilon arg shows whether AI will choose a move randomly with eps-prob
+        // moveAreaLimit limits how many cells per move will AI use if current state has more than (h + w - 1) free cells
+        public (int Height, int Width) ChooseAction(int[,] state, bool epsilon = true, int moveAreaLimit = int.MaxValue)
+        {
+            // If free area is less than or equal to the field's (height + width - 1), override move area limit
+            bool overrideAreaLimit = GetFreeArea(state) <= (state.GetLength(0) + state.GetLength(1) - 1);
             var availableActions = Field.AvailableActions(state);
             Random rand = new Random();
 
             // Return random action with epsilon probability, otherwise an action with the best q-value
             if (rand.NextDouble() <= _epsilon && epsilon)
             {
-                int randomIndex = rand.Next(availableActions.Count);
-                return availableActions[randomIndex];
+                // Find random move that matches move area limit if it's defined
+                if (moveAreaLimit != int.MaxValue && !overrideAreaLimit)
+                {
+                    (int Height, int Width) action = default;
+                    int squareGain = int.MaxValue;
+
+                    while (squareGain > moveAreaLimit)
+                    {
+                        int randomIndex = rand.Next(availableActions.Count);
+                        action = availableActions[randomIndex];
+
+                        squareGain = MoveAreaSquareGain(state, action);
+                    }
+
+                    return action;
+                }
+                else
+                {
+                    int randomIndex = rand.Next(availableActions.Count);
+                    return availableActions[randomIndex];
+                }
             }
             else
             {
@@ -122,7 +192,18 @@ namespace QChompLibrary
                 {
                     double qValue = GetQValue(state, action, false);
 
-                    if (qValue >= maxValue)
+                    // Check square gain if there's a defined limit
+                    if (moveAreaLimit != int.MaxValue && !overrideAreaLimit)
+                    {
+                        int delta = MoveAreaSquareGain(state, action);
+
+                        if (delta <= moveAreaLimit && qValue >= maxValue)
+                        {
+                            maxValue = qValue;
+                            bestAction = action;
+                        }
+                    }
+                    else if (qValue >= maxValue)
                     {
                         maxValue = qValue;
                         bestAction = action;

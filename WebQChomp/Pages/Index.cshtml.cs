@@ -79,7 +79,7 @@ namespace WebQChomp.Pages
 
             // Make user move and wait a bit
             field.MakeMove((json.X, json.Y));
-            System.Threading.Thread.Sleep(175);
+            System.Threading.Thread.Sleep(125);
             //Debug.WriteLine("user move");
             //PrintField(field.Grid);
 
@@ -87,7 +87,11 @@ namespace WebQChomp.Pages
             (int Height, int Width) action = (-1, -1);
             if (field.Winner == 0)
             {
-                action = model.ChooseAction(field.Grid, true);
+                // Don't use epsilon-prob random move when on hard difficulty 
+                bool eps = (json.Diff == 2) ? false : true;
+
+                // Limit grid usage per move to 5 maximum
+                action = model.ChooseAction(field.Grid, eps, 5);
             }
 
             // Make move if possible
@@ -113,8 +117,7 @@ namespace WebQChomp.Pages
         // AI training function
         static AI Train(int iterations, int h, int w)
         {
-            int delta = 0;
-            AI player = new AI();
+            AI player = new AI(0.50, 0.19);
 
             for (int i = 0; i < iterations; i++)
             {
@@ -157,18 +160,8 @@ namespace WebQChomp.Pages
                         player.UpdateModel(last[game.Player].State, last[game.Player].Action, newState, 0);
                     }
                 }
-
-                // Training stats output
-                if ((i + 1) % 1000 == 0)
-                {
-                    int transitions = player.Transitions;
-
-                    Console.WriteLine($"Training game {((i + 1) / 1000)}k... ({transitions} transitions, {transitions - delta} delta)");
-                    delta = player.Transitions;
-                }
             }
 
-            Console.WriteLine("Done training\n");
             return player;
         }
 
@@ -176,25 +169,25 @@ namespace WebQChomp.Pages
         AI ModelCache(int diff)
         {
             AI model;
-            string modelName = "6_9_700_model";
-            int iterations = 700;
+            string modelName = "6_9_1000_model";
+            int iterations = 1000;
 
             // Set model name according to difficulty (0 - easy, 2 - hard)
             switch (diff)
             {
                 case 0:
-                    modelName = "6_9_700_model";
-                    iterations = 700;
+                    modelName = "6_9_1000_model";
+                    iterations = 1000;
                     break;
 
                 case 1:
-                    modelName = "6_9_2000_model";
-                    iterations = 2000;
+                    modelName = "6_9_5000_model";
+                    iterations = 5000;
                     break;
 
                 case 2:
-                    modelName = "6_9_6000_model";
-                    iterations = 6000;
+                    modelName = "6_9_25000_model";
+                    iterations = 25000;
                     break;
 
                 default: break;

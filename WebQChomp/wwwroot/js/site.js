@@ -85,7 +85,7 @@ function clickableGrid(rows, cols, callback) {
             cell.id = `cell-${r * cols + c}`;
             cell.style.width = '35px';
 
-            if (r === 0 && c === 0) cell.bgColor = 'red';
+            if (r === 0 && c === 0) cell.bgColor = 'green';
 
             cell.addEventListener('click', (function (el, r, c) {
                 return function () {
@@ -135,7 +135,7 @@ async function reset() {
         for (var c = 0; c < 9; ++c) {
             var cell = document.getElementById(`cell-${r * 9 + c}`);
             if (r === 0 && c === 0) {
-                cell.bgColor = 'red';
+                cell.bgColor = 'green';
             } else {
                 cell.bgColor = 'white';
             }
