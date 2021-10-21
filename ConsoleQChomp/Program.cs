@@ -123,6 +123,8 @@ namespace ConsoleQChomp
                 Console.WriteLine();
 
                 gameField = new Field(h, w, (0, 0));
+                AI.LoadJsonModel("");
+                //gameField = new Field(2, 2, (0, 0));
                 ai = Train(iter, h, w);
 
                 if (saveFile)
@@ -159,7 +161,7 @@ namespace ConsoleQChomp
                         if (input == "y" || input == "yes")
                         {
                             validAnswer = true;
-                            ai.SaveModel(gameField, iter, path);
+                            ai.SaveJsonModel(gameField, iter, path);
                             saveFile = true;
                         }
                         else if (input == "n" || input == "no")

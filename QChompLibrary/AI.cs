@@ -45,6 +45,9 @@ namespace QChompLibrary
         public int Transitions => _qDict.Count;
         public double LearningRate { get => _alpha; }
         public double Epsilon { get => _epsilon; }
+
+        [JsonConverter(typeof(TupleKeyConverter))]
+        public Dictionary<(int[,] State, (int Height, int Width) Action), double> QDict { get; set; }
         #endregion
 
 
@@ -283,6 +286,22 @@ namespace QChompLibrary
 
                 return (model, field, iterations);
             }
+        }
+
+        public void SaveJsonModel(Field field, int iterCount, string path = null)
+        {
+            string filename = (path != null) ? (path) : ($"{field.GridHeight}_{field.GridWidth}_{_qDict.Count}_modelv1.json");
+            string json = JsonConvert.SerializeObject(_qDict);
+
+            System.IO.File.WriteAllText(filename, json);
+        }
+
+        public static (AI, Field, int) LoadJsonModel(string path)
+        {
+            var json = File.ReadAllText("2_2_8_modelv1.dat");
+            var dict = JsonConvert.DeserializeObject<Dictionary<(int[,] State, (int Height, int Width) Action), double>>(json, new TupleKeyConverter());
+
+            return (null, null, 0);
         }
         #endregion
     }
