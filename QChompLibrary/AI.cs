@@ -45,9 +45,6 @@ namespace QChompLibrary
         public int Transitions => _qDict.Count;
         public double LearningRate { get => _alpha; }
         public double Epsilon { get => _epsilon; }
-
-        [JsonConverter(typeof(TupleKeyConverter))]
-        public Dictionary<(int[,] State, (int Height, int Width) Action), double> QDict { get; set; }
         #endregion
 
 
@@ -230,6 +227,7 @@ namespace QChompLibrary
 
         // Saves current model as binary file with "<height>_<width>_<qDict.Count>_model.dat" filename. Returns saved model filename or null if any error occurred
         // Custom filename might be used as well 
+        [Obsolete("This method is deprecated due to BinaryFormatter security issues. Use SaveJsonModel method instead.")]
         public string SaveModel(Field field, int iterCount, string path = null)
         {
             // Get model filename in format of "<height>_<width>_<qDict.Count>_modelv1.dat"
@@ -264,6 +262,7 @@ namespace QChompLibrary
 
 
         // Loads model file and returns AI instance, game field and number of training iterations
+        [Obsolete("This method is deprecated due to BinaryFormatter security issues. Use LoadJsonModel method instead.")]
         public static (AI, Field, int) LoadModel(string path)
         {
             BinaryFormatter formatter = new BinaryFormatter();
@@ -288,18 +287,37 @@ namespace QChompLibrary
             }
         }
 
+
+        // Saves current model as list in json with "<height>_<width>_<qDict.Count>_modelv1" name. Custom names might be used as well.
+        // Returns saved model filename or null if any error occurred
         public void SaveJsonModel(Field field, int iterCount, string path = null)
         {
             string filename = (path != null) ? (path) : ($"{field.GridHeight}_{field.GridWidth}_{_qDict.Count}_modelv1.json");
-            string json = JsonConvert.SerializeObject(_qDict);
 
-            System.IO.File.WriteAllText(filename, json);
+            List<QDictionaryEntry> entries = new List<QDictionaryEntry>();
+            foreach (KeyValuePair<(int[,] State, (int Height, int Width) Action), double> pair in _qDict)
+            {
+                var key = pair.Key;
+                var val = pair.Value;
+
+                QDictionaryEntry entry = new QDictionaryEntry(key.State, key.Action.Height, key.Action.Width, val);
+                entries.Add(entry);
+            }
+
+            string json = JsonConvert.SerializeObject(entries, Formatting.Indented);
+            File.WriteAllText(filename, json);
         }
 
         public static (AI, Field, int) LoadJsonModel(string path)
         {
-            var json = File.ReadAllText("2_2_8_modelv1.dat");
-            var dict = JsonConvert.DeserializeObject<Dictionary<(int[,] State, (int Height, int Width) Action), double>>(json, new TupleKeyConverter());
+            Dictionary<(int[,], (int, int)), double> dict = new Dictionary<(int[,], (int, int)), double>();
+            var json = File.ReadAllText("2_2_8_modelv1.json");
+            var list = JsonConvert.DeserializeObject<List<QDictionaryEntry>>(json);
+
+            foreach (var el in list)
+            {
+                dict[(el.State, (el.Height, el.Width))] = el.QValue;
+            }
 
             return (null, null, 0);
         }

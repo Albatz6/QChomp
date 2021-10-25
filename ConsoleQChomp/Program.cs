@@ -124,7 +124,6 @@ namespace ConsoleQChomp
 
                 gameField = new Field(h, w, (0, 0));
                 AI.LoadJsonModel("");
-                //gameField = new Field(2, 2, (0, 0));
                 ai = Train(iter, h, w);
 
                 if (saveFile)
