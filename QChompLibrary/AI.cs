@@ -292,7 +292,7 @@ namespace QChompLibrary
         // Returns saved model filename
         public string SaveJsonModel(Field field, int iterCount, string path = null)
         {
-            string filename = (path != null) ? (path) : ($"{field.GridHeight}_{field.GridWidth}_{_qDict.Count}_modelv1.json");
+            string filename = (path != null) ? (path) : ($"{field.GridHeight}_{field.GridWidth}_{_qDict.Count}_model.json");
 
             // Convert q-dictionary to list of it's entries
             List<QDictionaryEntry> entries = new List<QDictionaryEntry>();
@@ -307,14 +307,14 @@ namespace QChompLibrary
 
             // Make full AI representation in order to serialize it
             JsonAI ai = new JsonAI();
-            ai.Entries = entries;
-            ai.GridHeight = field.GridHeight;
-            ai.GridWidth = field.GridWidth;
-            ai.PoisonedCellHeight = field.PoisonedCell.Height;
+            ai.Entries = entries;                               // List of q-dict key-value pairs
+            ai.GridHeight = field.GridHeight;                   // Game field height
+            ai.GridWidth = field.GridWidth;                     // Game field width
+            ai.PoisonedCellHeight = field.PoisonedCell.Height;  // Poisoned cell coordinates
             ai.PoisonedCellWidth = field.PoisonedCell.Width;
-            ai.LearningRate = _alpha;
-            ai.EpsilonRate = _epsilon;
-            ai.Iterations = iterCount;
+            ai.LearningRate = _alpha;                           // Learning rate
+            ai.EpsilonRate = _epsilon;                          // Epsilon rate
+            ai.Iterations = iterCount;                          // Number of training games
 
             // Serialize the AI 
             string json = JsonConvert.SerializeObject(ai, Formatting.Indented);
@@ -323,13 +323,28 @@ namespace QChompLibrary
             return filename;
         }
 
+
+        // Loads model file and returns AI instance, game field and number of training iterations
         public static (AI, Field, int) LoadJsonModel(string path)
         {
             Dictionary<(int[,], (int, int)), double> dict = new Dictionary<(int[,], (int, int)), double>(new QKeyComparer());
-            var json = File.ReadAllText("2_2_8_modelv1.json");
-            var list = JsonConvert.DeserializeObject<JsonAI>(json);
+            var json = File.ReadAllText(path);
+            var ai = JsonConvert.DeserializeObject<JsonAI>(json);
 
-            return (null, null, 0);
+            // Convert list of key-value pairs from JsonAI back to q-dictionary
+            foreach (var el in ai.Entries)
+            {
+                dict[(el.State, (el.Height, el.Width))] = el.QValue; 
+            }
+
+            // Get new game grid
+            (int Height, int Width) poisonedCell = (ai.PoisonedCellHeight, ai.PoisonedCellWidth);
+            Field field = new Field(ai.GridHeight, ai.GridWidth, poisonedCell);
+
+            // Get AI instance
+            AI model = new AI(ai.LearningRate, ai.EpsilonRate, dict);
+
+            return (model, field, ai.Iterations);
         }
         #endregion
     }
