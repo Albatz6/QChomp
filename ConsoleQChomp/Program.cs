@@ -74,7 +74,7 @@ namespace ConsoleQChomp
             // Load model if specified, otherwise prompt user to enter startup parameters
             if (loadFile)
             {
-                (AI, Field, int) model = AI.LoadJsonModel(path);
+                (AI, Field, int) model = AI.LoadModel(path);
                 gameField = model.Item2;
                 ai = model.Item1;
                 iter = model.Item3;
@@ -159,7 +159,7 @@ namespace ConsoleQChomp
                         if (input == "y" || input == "yes")
                         {
                             validAnswer = true;
-                            ai.SaveJsonModel(gameField, iter, path);
+                            ai.SaveModel(gameField, iter, path);
                             saveFile = true;
                         }
                         else if (input == "n" || input == "no")

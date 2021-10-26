@@ -225,72 +225,9 @@ namespace QChompLibrary
         }
 
 
-        // Saves current model as binary file with "<height>_<width>_<qDict.Count>_model.dat" filename. Returns saved model filename or null if any error occurred
-        // Custom filename might be used as well 
-        [Obsolete("This method is deprecated due to BinaryFormatter security issues. Use SaveJsonModel method instead.")]
-        public string SaveModel(Field field, int iterCount, string path = null)
-        {
-            // Get model filename in format of "<height>_<width>_<qDict.Count>_modelv1.dat"
-            string filename = (path != null) ? (path) : ($"{field.GridHeight}_{field.GridWidth}_{_qDict.Count}_modelv1.dat");
-
-            BinaryFormatter formatter = new BinaryFormatter();
-            
-            using (FileStream fs = File.OpenWrite(filename))
-            using (BinaryWriter writer = new BinaryWriter(fs))
-            {
-                writer.Write(field.GridHeight);                            // Height
-                writer.Write(field.GridWidth);                             // Width
-                writer.Write(field.PoisonedCell.Height);                   // Poisoned cell coordinates
-                writer.Write(field.PoisonedCell.Width);
-                writer.Write(_alpha);                                      // Learning rate
-                writer.Write(_epsilon);                                    // Epsilon rate
-                writer.Write(iterCount);                                   // Number of training games
-
-                try
-                {
-                    formatter.Serialize(fs, _qDict);
-                }
-                catch (SerializationException e)
-                {
-                    Console.WriteLine("Failed to serialize. Reason: " + e.Message);
-                    filename = null;
-                }
-
-                return filename;
-            }
-        }
-
-
-        // Loads model file and returns AI instance, game field and number of training iterations
-        [Obsolete("This method is deprecated due to BinaryFormatter security issues. Use LoadJsonModel method instead.")]
-        public static (AI, Field, int) LoadModel(string path)
-        {
-            BinaryFormatter formatter = new BinaryFormatter();
-
-            using (FileStream fs = File.OpenRead(path))
-            using (BinaryReader reader = new BinaryReader(fs))
-            {
-                // Load game field info
-                int height = reader.ReadInt32();
-                int width = reader.ReadInt32();
-                (int Height, int Width) poisonedCell = (reader.ReadInt32(), reader.ReadInt32());
-                Field field = new Field(height, width, poisonedCell);
-
-                // Load model info
-                double learningRate = reader.ReadDouble();
-                double epsilon = reader.ReadDouble();
-                int iterations = reader.ReadInt32();
-                var qDict = (Dictionary<(int[,] State, (int Height, int Width) Action), double>)formatter.Deserialize(fs);
-                AI model = new AI(learningRate, epsilon, qDict);
-
-                return (model, field, iterations);
-            }
-        }
-
-
         // Saves current model as list in json with "<height>_<width>_<qDict.Count>_modelv1" name. Custom name might be used as well.
         // Returns saved model filename
-        public string SaveJsonModel(Field field, int iterCount, string path = null)
+        public string SaveModel(Field field, int iterCount, string path = null)
         {
             string filename = (path != null) ? (path) : ($"{field.GridHeight}_{field.GridWidth}_{_qDict.Count}_model.json");
 
@@ -324,8 +261,8 @@ namespace QChompLibrary
         }
 
 
-        // Loads model file and returns AI instance, game field and number of training iterations
-        public static (AI, Field, int) LoadJsonModel(string path)
+        // Loads model json-file and returns AI instance, game field and number of training iterations
+        public static (AI, Field, int) LoadModel(string path)
         {
             Dictionary<(int[,], (int, int)), double> dict = new Dictionary<(int[,], (int, int)), double>(new QKeyComparer());
             var json = File.ReadAllText(path);
@@ -345,6 +282,69 @@ namespace QChompLibrary
             AI model = new AI(ai.LearningRate, ai.EpsilonRate, dict);
 
             return (model, field, ai.Iterations);
+        }
+
+
+        // Saves current model as binary file with "<height>_<width>_<qDict.Count>_model.dat" filename. Returns saved model filename or null if any error occurred
+        // Custom filename might be used as well 
+        [Obsolete("This method is deprecated due to BinaryFormatter security issues. Use SaveModel method instead.")]
+        public string SaveBinaryModel(Field field, int iterCount, string path = null)
+        {
+            // Get model filename in format of "<height>_<width>_<qDict.Count>_modelv1.dat"
+            string filename = (path != null) ? (path) : ($"{field.GridHeight}_{field.GridWidth}_{_qDict.Count}_modelv1.dat");
+
+            BinaryFormatter formatter = new BinaryFormatter();
+
+            using (FileStream fs = File.OpenWrite(filename))
+            using (BinaryWriter writer = new BinaryWriter(fs))
+            {
+                writer.Write(field.GridHeight);                            // Height
+                writer.Write(field.GridWidth);                             // Width
+                writer.Write(field.PoisonedCell.Height);                   // Poisoned cell coordinates
+                writer.Write(field.PoisonedCell.Width);
+                writer.Write(_alpha);                                      // Learning rate
+                writer.Write(_epsilon);                                    // Epsilon rate
+                writer.Write(iterCount);                                   // Number of training games
+
+                try
+                {
+                    formatter.Serialize(fs, _qDict);
+                }
+                catch (SerializationException e)
+                {
+                    Console.WriteLine("Failed to serialize. Reason: " + e.Message);
+                    filename = null;
+                }
+
+                return filename;
+            }
+        }
+
+
+        // Loads model file and returns AI instance, game field and number of training iterations
+        [Obsolete("This method is deprecated due to BinaryFormatter security issues. Use LoadModel method instead.")]
+        public static (AI, Field, int) LoadBinaryModel(string path)
+        {
+            BinaryFormatter formatter = new BinaryFormatter();
+
+            using (FileStream fs = File.OpenRead(path))
+            using (BinaryReader reader = new BinaryReader(fs))
+            {
+                // Load game field info
+                int height = reader.ReadInt32();
+                int width = reader.ReadInt32();
+                (int Height, int Width) poisonedCell = (reader.ReadInt32(), reader.ReadInt32());
+                Field field = new Field(height, width, poisonedCell);
+
+                // Load model info
+                double learningRate = reader.ReadDouble();
+                double epsilon = reader.ReadDouble();
+                int iterations = reader.ReadInt32();
+                var qDict = (Dictionary<(int[,] State, (int Height, int Width) Action), double>)formatter.Deserialize(fs);
+                AI model = new AI(learningRate, epsilon, qDict);
+
+                return (model, field, iterations);
+            }
         }
         #endregion
     }
