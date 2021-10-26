@@ -2,10 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
 
 namespace QChompLibrary
 {
@@ -229,7 +227,7 @@ namespace QChompLibrary
         // Returns saved model filename
         public string SaveModel(Field field, int iterCount, string path = null)
         {
-            string filename = (path != null) ? (path) : ($"{field.GridHeight}_{field.GridWidth}_{_qDict.Count}_model.json");
+            string filename = (path != null) ? (path) : ($"{field.GridHeight}_{field.GridWidth}_{iterCount}_model.json");
 
             // Convert q-dictionary to list of it's entries
             List<QDictionaryEntry> entries = new List<QDictionaryEntry>();

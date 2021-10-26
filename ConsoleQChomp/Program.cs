@@ -127,7 +127,7 @@ namespace ConsoleQChomp
 
                 if (saveFile)
                 {
-                    ai.SaveJsonModel(gameField, iter, path);
+                    ai.SaveModel(gameField, iter, path);
                 }
             }
 

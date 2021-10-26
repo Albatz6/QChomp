@@ -1,15 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Antiforgery;
 using QChompLibrary;
 using System;
 using System.Collections.Generic;
-using System.Text.Json;
-using System.Linq;
-using System.Threading.Tasks;
-using System.IO;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
@@ -91,8 +84,8 @@ namespace WebQChomp.Pages
             (int Height, int Width) action = (-1, -1);
             if (field.Winner == 0)
             {
-                // Don't use epsilon-prob random move when on hard difficulty 
-                bool eps = (json.Diff == 2) ? false : true;
+                // Don't use epsilon-prob random move when on medium or hard difficulty 
+                bool eps = (json.Diff == 0);
 
                 // Limit grid usage per move in range from 1 to 6
                 Random rand = new Random();
@@ -175,24 +168,20 @@ namespace WebQChomp.Pages
         {
             AI model;
             string modelName = "6_9_1000_model";
-            int iterations = 1000;
 
             // Set model name according to difficulty (0 - easy, 2 - hard)
             switch (diff)
             {
                 case 0:
                     modelName = "6_9_1000_model";
-                    iterations = 1000;
                     break;
 
                 case 1:
                     modelName = "6_9_5000_model";
-                    iterations = 5000;
                     break;
 
                 case 2:
-                    modelName = "6_9_25000_model";
-                    iterations = 25000;
+                    modelName = "6_9_30000_model";
                     break;
 
                 default: break;
@@ -201,7 +190,7 @@ namespace WebQChomp.Pages
             // Try to get cache, otherwise write model to cache
             if (!_cache.TryGetValue(modelName, out model))
             {
-                model = Train(iterations, 6, 9);
+                model = AI.LoadModel(@$"Data\{modelName}.json").Item1;
 
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
                     .SetSlidingExpiration(TimeSpan.FromHours(24));
