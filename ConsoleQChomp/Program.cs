@@ -54,7 +54,7 @@ namespace ConsoleQChomp
                             break;
                     }
 
-                    // Remembering last argument
+                    // Remembering the last argument
                     last = s;
                 }
 
@@ -74,7 +74,7 @@ namespace ConsoleQChomp
             // Load model if specified, otherwise prompt user to enter startup parameters
             if (loadFile)
             {
-                (AI, Field, int) model = AI.LoadModel(path);
+                (AI, Field, int) model = AI.LoadJsonModel(path);
                 gameField = model.Item2;
                 ai = model.Item1;
                 iter = model.Item3;
@@ -123,12 +123,11 @@ namespace ConsoleQChomp
                 Console.WriteLine();
 
                 gameField = new Field(h, w, (0, 0));
-                AI.LoadJsonModel("");
                 ai = Train(iter, h, w);
 
                 if (saveFile)
                 {
-                    ai.SaveModel(gameField, iter, path);
+                    ai.SaveJsonModel(gameField, iter, path);
                 }
             }
 

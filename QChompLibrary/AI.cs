@@ -42,9 +42,9 @@ namespace QChompLibrary
 
 
         #region Properties
-        public int Transitions => _qDict.Count;
-        public double LearningRate { get => _alpha; }
-        public double Epsilon { get => _epsilon; }
+        public int Transitions      => _qDict.Count;
+        public double LearningRate  => _alpha;
+        public double Epsilon       => _epsilon;
         #endregion
 
 
@@ -288,12 +288,13 @@ namespace QChompLibrary
         }
 
 
-        // Saves current model as list in json with "<height>_<width>_<qDict.Count>_modelv1" name. Custom names might be used as well.
-        // Returns saved model filename or null if any error occurred
-        public void SaveJsonModel(Field field, int iterCount, string path = null)
+        // Saves current model as list in json with "<height>_<width>_<qDict.Count>_modelv1" name. Custom name might be used as well.
+        // Returns saved model filename
+        public string SaveJsonModel(Field field, int iterCount, string path = null)
         {
             string filename = (path != null) ? (path) : ($"{field.GridHeight}_{field.GridWidth}_{_qDict.Count}_modelv1.json");
 
+            // Convert q-dictionary to list of it's entries
             List<QDictionaryEntry> entries = new List<QDictionaryEntry>();
             foreach (KeyValuePair<(int[,] State, (int Height, int Width) Action), double> pair in _qDict)
             {
@@ -304,20 +305,29 @@ namespace QChompLibrary
                 entries.Add(entry);
             }
 
-            string json = JsonConvert.SerializeObject(entries, Formatting.Indented);
+            // Make full AI representation in order to serialize it
+            JsonAI ai = new JsonAI();
+            ai.Entries = entries;
+            ai.GridHeight = field.GridHeight;
+            ai.GridWidth = field.GridWidth;
+            ai.PoisonedCellHeight = field.PoisonedCell.Height;
+            ai.PoisonedCellWidth = field.PoisonedCell.Width;
+            ai.LearningRate = _alpha;
+            ai.EpsilonRate = _epsilon;
+            ai.Iterations = iterCount;
+
+            // Serialize the AI 
+            string json = JsonConvert.SerializeObject(ai, Formatting.Indented);
             File.WriteAllText(filename, json);
+
+            return filename;
         }
 
         public static (AI, Field, int) LoadJsonModel(string path)
         {
-            Dictionary<(int[,], (int, int)), double> dict = new Dictionary<(int[,], (int, int)), double>();
+            Dictionary<(int[,], (int, int)), double> dict = new Dictionary<(int[,], (int, int)), double>(new QKeyComparer());
             var json = File.ReadAllText("2_2_8_modelv1.json");
-            var list = JsonConvert.DeserializeObject<List<QDictionaryEntry>>(json);
-
-            foreach (var el in list)
-            {
-                dict[(el.State, (el.Height, el.Width))] = el.QValue;
-            }
+            var list = JsonConvert.DeserializeObject<JsonAI>(json);
 
             return (null, null, 0);
         }
