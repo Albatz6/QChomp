@@ -2,7 +2,7 @@
 This is a small project which shows how machine learning might be used in a simple [game of Chomp](https://en.wikipedia.org/wiki/Chomp).
 AI uses reinforcement learning technique called Q-learning and therefore is able to learn how to play Chomp playing against itself.
 
-The project currently consists of the core library, console application and basic web app created with Razor Pages to showcase the AI on 6x9 field.
+The project currently consists of the core library, console application and basic web app created with Razor Pages to showcase the AI on a 6x9 field.
 Console application can be used for testing various field sizes as well as AI settings (epsilon rate, learning rate and number of training games).
 
 ## How to use

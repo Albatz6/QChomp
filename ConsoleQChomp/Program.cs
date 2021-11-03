@@ -10,65 +10,11 @@ namespace ConsoleQChomp
         {
             Field gameField;
             AI ai;
-            bool saveFile = false, loadFile = false;
-            string path = null;
-            int iter = 0;
+            bool saveFile, loadFile;
+            string path;
+            int iter = 0; // Used for specifying the number of training iterations
 
-            // Command-line arguments processing
-            if (args.Length != 0)
-            {
-                string last = null;
-
-                foreach (string s in args)
-                {
-                    switch (s)
-                    {
-                        case "-h":
-                        case "--help":
-                            PrintHelp();
-                            Environment.Exit(0);
-                            break;
-
-                        case "--save":
-                            saveFile = true;
-                            break;
-
-                        case "--load":
-                            loadFile = true;
-                            break;
-
-                        default:
-                            if (last == "--save" || last == "--load")
-                            {
-                                path = s;   // Obtain filename if either saving or loading will be performed
-                            }
-                            else
-                            {
-                                Console.ForegroundColor = ConsoleColor.Red;
-                                Console.WriteLine("Invalid command. See the list of available commands.");
-                                Console.ResetColor();
-                                PrintHelp();
-                                Environment.Exit(0);
-                            }
-
-                            break;
-                    }
-
-                    // Remembering the last argument
-                    last = s;
-                }
-
-                // Exit with error if user tried to load and save simultaneously or if they try to load with no path provided
-                if ((loadFile && saveFile) || (loadFile && path == null))
-                {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("Invalid command. See the list of available commands.");
-                    Console.ResetColor();
-                    PrintHelp();
-                    Environment.Exit(0);
-                }
-            }
-
+            ArgsProcessing.Process(args, out saveFile, out loadFile, out path);
             Console.WriteLine("QChomp Console v1\n");
 
             // Load model if specified, otherwise prompt user to enter startup parameters
@@ -137,7 +83,7 @@ namespace ConsoleQChomp
             bool newGame = true;
             while (newGame)
             {
-                Display(gameField);
+                ASCIIGraphics.Display(gameField);
                 Play(gameField, ai);
 
                 // Congratulate winner
@@ -146,7 +92,7 @@ namespace ConsoleQChomp
                 Console.WriteLine($"{output}\n");
 
                 // Save model if user agrees
-                bool validAnswer = false;
+                bool validAnswer;
                 if (!loadFile && !saveFile)
                 {
                     validAnswer = false;
@@ -250,7 +196,7 @@ namespace ConsoleQChomp
                     Console.WriteLine($"AI move: ({action.Height + 1}, {action.Width + 1})");
                 }
 
-                Display(gameField);
+                ASCIIGraphics.Display(gameField);
             }
         }
 
@@ -314,87 +260,6 @@ namespace ConsoleQChomp
 
             Console.WriteLine("Done training\n");
             return player;
-        }
-
-        // ASCII-representation of the grid
-        static void Display(Field game)
-        {
-            // Horizontal alphabetic helper line
-            Console.Write("     ");
-            char c = 'A';
-            for (int i = 0; i < game.GridWidth; i++)
-            {
-                Console.Write($"{c++}   ");
-            }
-            Console.WriteLine();
-
-            // Print the first grid cells divider
-            PrintDivider(game.GridWidth);
-
-            // The rest of the grid
-            for (int i = 0; i < game.GridHeight; i++)
-            {
-                Console.Write("{0, -3}|", i + 1);
-                for (int j = 0; j < game.GridWidth; j++)
-                {
-                    char val = ' ';
-                    ConsoleColor outputForeColor = default, outputBackColor = default;
-
-                    // Get suitable char and color for current cell condition
-                    switch (game.Grid[i, j])
-                    {
-                        case (int)Field.Conditions.Poisoned:
-                            val = '*';
-                            outputForeColor = ConsoleColor.White;
-                            outputBackColor = ConsoleColor.Red;
-                            break;
-
-                        case (int)Field.Conditions.Used:
-                            val = '/';
-                            outputForeColor = ConsoleColor.White;
-                            outputBackColor = ConsoleColor.Blue;
-                            break;
-
-                        case (int)Field.Conditions.Blank:
-                            val = ' ';
-                            break;
-                    }
-
-                    Console.Write(" ");
-                    Console.ForegroundColor = outputForeColor;
-                    Console.BackgroundColor = outputBackColor;
-                    Console.Write($"{val}");
-                    Console.ResetColor();
-                    Console.Write(" |");
-                }
-                Console.WriteLine();
-
-                // Print the closing divider
-                PrintDivider(game.GridWidth);
-            }
-
-            Console.WriteLine();
-        }
-
-        // Prints ASCII-divider "|---|" with 3-space alignment
-        static void PrintDivider(int length)
-        {
-            Console.Write("   ");
-            for (int i = 0; i < length; i++)
-            {
-                Console.Write("|---");
-            }
-            Console.WriteLine("|");
-        }
-
-        // Prints command list and exits
-        static void PrintHelp()
-        {
-            Console.WriteLine("Command list:");
-            Console.WriteLine(" {0, -21} {1, -10}", "-h|--help", "Show command list.");
-            Console.WriteLine(" {0, -21} {1, -10}", "--save", "Save model with autogenerated name.");
-            Console.WriteLine(" {0, -21} {1, -10}", "--save [filename]", "Save model with the given name.");
-            Console.WriteLine(" {0, -21} {1, -10}\n", "--load [filename]", "Load model from file.");
         }
     }
 }
