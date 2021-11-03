@@ -1,14 +1,31 @@
 ﻿// Please see documentation at https://docs.microsoft.com/aspnet/core/client-side/bundling-and-minification
 // for details on configuring this project to bundle and minify static web assets.
 
-// Write your JavaScript code.
-
 //Represents game difficulty
 // 0 - easy, 1 - medium, 2 - hard
 var difficulty = 0;
 var userMove = true;
 var winner = 0;
 
+// Create game grid array
+var userGrid = new Array(6);
+for (var i = 0; i < userGrid.length; i++) {
+    userGrid[i] = new Array(9);
+}
+populateGrid(userGrid);
+
+// Populate game grid with initial values
+function populateGrid(gameGrid) {
+    for (var i = 0; i < gameGrid.length; ++i) {
+        for (var j = 0; j < gameGrid[i].length; ++j) {
+            if (i == 0 && j == 0) {
+                gameGrid[i][j] = 2;  // Poisoned cell
+            } else {
+                gameGrid[i][j] = 0;  // Blank cell
+            }
+        }
+    }
+}
 
 // Handle difficulty radio button group switching
 var selector = document.getElementById('difficulty-selection');
@@ -26,25 +43,27 @@ var grid = clickableGrid(6, 9, async function (el, row, col) {
     console.log("You clicked on row:", row);
     console.log("You clicked on col:", col);
 
-    //Paint chosen area
-    function paint(x, y) {
+    //Paint chosen area and change game grid array values
+    function mark(x, y) {
         for (var r = x; r < 6; ++r) {
             for (var c = y; c < 9; ++c) {
                 var cell = document.getElementById(`cell-${r * 9 + c}`);
                 if (cell.bgColor !== 'blue') cell.bgColor = 'blue';
+
+                userGrid[i][j] = 1;  // Mark cell as used
             }
         }
     }
 
     // Handle user move
     if (userMove && el.bgColor !== 'blue') {
-        paint(row, col);
+        mark(row, col);
 
         // Let AI make it's move
         userMove = false;
-        var move = await makeMove(row, col, difficulty);
+        var move = await makeMove(userGrid, difficulty);
         if (move[0] != -1 && move[1] != -1) {
-            paint(move[0], move[1]);
+            mark(move[0], move[1]);
         }
         console.log("AI move:", move);
 
@@ -99,7 +118,7 @@ function clickableGrid(rows, cols, callback) {
 }
 
 // AJAX request that sends the user move and returns AI's
-async function makeMove(row, col, difficulty) {
+async function makeMove(gameGrid, difficulty) {
     var move = []
     var token = document.getElementById('RequestVerificationToken').value;
 
@@ -110,8 +129,7 @@ async function makeMove(row, col, difficulty) {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            x: row,
-            y: col,
+            grid: gameGrid,
             diff: difficulty,
             reset: false
         })
@@ -142,6 +160,9 @@ async function reset() {
         }
     }
 
+    // Reset grid array
+    populateGrid(userGrid);
+
     // Send field reset ajax-post
     var token = document.getElementById('RequestVerificationToken').value;
     await fetch('/?handler=Action', {
@@ -151,8 +172,7 @@ async function reset() {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            x: -1,
-            y: -1,
+            grid: null,
             diff: -1,
             reset: true
         })

@@ -112,57 +112,6 @@ namespace WebQChomp.Pages
             return new JsonResult(new { Height = action.Height, Width = action.Width, Winner = winner });
         }
 
-        // AI training function
-        static AI Train(int iterations, int h, int w)
-        {
-            AI player = new AI(0.50, 0.19);
-
-            for (int i = 0; i < iterations; i++)
-            {
-                // Initialize new game
-                Field game = new Field(h, w, (0, 0));
-
-                // Keeping track of last move made by both players
-                Dictionary<int, (int[,] State, (int Height, int Width) Action)> last;
-                last = new Dictionary<int, (int[,] State, (int Height, int Width) Action)>();
-
-                last[(int)Field.Players.Player1] = (default, default);
-                last[(int)Field.Players.Player2] = (default, default);
-
-                // Game loop
-                while (true)
-                {
-                    // Keep current state and action
-                    int[,] state = new int[game.GridHeight, game.GridWidth];
-                    Array.Copy(game.Grid, 0, state, 0, game.Grid.Length);
-                    (int Height, int Width) action = player.ChooseAction(game.Grid, true);
-
-                    // Keep last state and action
-                    last[game.Player] = (state, action);
-
-                    // Make move
-                    game.MakeMove(action);
-                    int[,] newState = game.Grid;
-
-                    // Update q-values with rewards and break after the game is over, otherwise proceed with no reward
-                    if (game.Winner != (int)Field.Players.Blank)
-                    {
-                        player.UpdateModel(state, action, newState, -1);
-                        if (last[game.Player].State != null)
-                            player.UpdateModel(last[game.Player].State, last[game.Player].Action, newState, 1);
-
-                        break;
-                    }
-                    else if (last[game.Player].State != null) // Default state value is null
-                    {
-                        player.UpdateModel(last[game.Player].State, last[game.Player].Action, newState, 0);
-                    }
-                }
-            }
-
-            return player;
-        }
-
         // AI model retrieval or caching
         AI ModelCache(int diff)
         {
