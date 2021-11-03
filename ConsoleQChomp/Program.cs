@@ -11,19 +11,36 @@ namespace ConsoleQChomp
             Field gameField;
             AI ai;
             bool saveFile, loadFile;
+            double epsilonRate, learningRate;
             string path;
             int iter = 0; // Used for specifying the number of training iterations
 
-            ArgsProcessing.Process(args, out saveFile, out loadFile, out path);
+            ArgsProcessing.Process(args, out saveFile, out loadFile, out path, out epsilonRate, out learningRate);
             Console.WriteLine("QChomp Console v1\n");
 
             // Load model if specified, otherwise prompt user to enter startup parameters
             if (loadFile)
             {
-                (AI, Field, int) model = AI.LoadModel(path);
-                gameField = model.Item2;
+                (AI, Field, int) model = default;
+
+                try
+                {
+                    model = AI.LoadModel(path);
+                }
+                catch (Exception)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("An error occurred while loading model from file. Try checking your filename.");
+                    Console.ResetColor();
+                    Environment.Exit(2);
+                }
+
                 ai = model.Item1;
+                gameField = model.Item2;
                 iter = model.Item3;
+
+                Console.WriteLine("{0}\n{1}", $"Field size: {gameField.GridHeight}x{gameField.GridWidth}",
+                    $"AI: eps rate = {ai.Epsilon}, learning rate = {ai.LearningRate}");
             }
             else
             {
@@ -69,16 +86,19 @@ namespace ConsoleQChomp
                 Console.WriteLine();
 
                 gameField = new Field(h, w, (0, 0));
-                ai = Train(iter, h, w);
+                if (epsilonRate == 0.0 && learningRate == 0.0) ai = Train(iter, h, w);
+                else if (epsilonRate != 0.0 && learningRate == 0.0) ai = Train(iter, h, w, epsilonRate, 0.5);
+                else if (epsilonRate == 0.0 && learningRate != 0.0) ai = Train(iter, h, w, 0.1, learningRate);
+                else ai = Train(iter, h, w, epsilonRate, learningRate);
 
                 if (saveFile)
                 {
                     string filename = ai.SaveModel(gameField, iter, path);
-                    Console.WriteLine($"Model has been saved as '{filename}'");
+                    Console.WriteLine($"Model has been saved as '{filename}'\n");
                 }
             }
 
-            Console.WriteLine($"Transitions overall: {ai.Transitions}\n");
+            Console.WriteLine($"Transitions overall: {ai.Transitions}\nIterations: {iter}\n");
 
             // Iterate while user decides to play again
             bool newGame = true;
@@ -108,7 +128,7 @@ namespace ConsoleQChomp
                             validAnswer = true;
 
                             string filename = ai.SaveModel(gameField, iter, path);
-                            Console.WriteLine($"Model has been saved as '{filename}'");
+                            Console.WriteLine($"Model has been saved as '{filename}'\n");
                             saveFile = true;
                         }
                         else if (input == "n" || input == "no")
@@ -203,10 +223,11 @@ namespace ConsoleQChomp
         }
 
         // Returns AI trained given amount of times to play the game
-        static AI Train(int iterations, int h, int w)
+        static AI Train(int iterations, int h, int w, double epsRate = 0.1, double learningRate = 0.5)
         {
             int delta = 0;
-            AI player = new AI();
+            AI player = new AI(learningRate, epsRate);
+            Console.WriteLine($"Training with {epsRate} eps rate and {learningRate} learning rate");
 
             for (int i = 0; i < iterations; i++)
             {
