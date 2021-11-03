@@ -73,7 +73,8 @@ namespace ConsoleQChomp
 
                 if (saveFile)
                 {
-                    ai.SaveModel(gameField, iter, path);
+                    string filename = ai.SaveModel(gameField, iter, path);
+                    Console.WriteLine($"Model has been saved as '{filename}'");
                 }
             }
 
@@ -105,7 +106,9 @@ namespace ConsoleQChomp
                         if (input == "y" || input == "yes")
                         {
                             validAnswer = true;
-                            ai.SaveModel(gameField, iter, path);
+
+                            string filename = ai.SaveModel(gameField, iter, path);
+                            Console.WriteLine($"Model has been saved as '{filename}'");
                             saveFile = true;
                         }
                         else if (input == "n" || input == "no")
@@ -136,7 +139,6 @@ namespace ConsoleQChomp
                 } while (!validAnswer);
             }
         }
-
 
         // Game loop
         static void Play(Field gameField, AI ai)
