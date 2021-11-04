@@ -156,6 +156,9 @@ namespace QChompLibrary
             var availableActions = Field.AvailableActions(state);
             Random rand = new Random();
 
+            // In case the game has ended
+            if (availableActions.Count == 0) return (-1, -1);
+
             // Return random action with epsilon probability, otherwise an action with the best q-value
             if (rand.NextDouble() <= _epsilon && epsilon)
             {

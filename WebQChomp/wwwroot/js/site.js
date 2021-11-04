@@ -50,7 +50,7 @@ var grid = clickableGrid(6, 9, async function (el, row, col) {
                 var cell = document.getElementById(`cell-${r * 9 + c}`);
                 if (cell.bgColor !== 'blue') cell.bgColor = 'blue';
 
-                userGrid[i][j] = 1;  // Mark cell as used
+                userGrid[r][c] = 1;  // Mark cell as used
             }
         }
     }

@@ -2,11 +2,11 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using QChompLibrary;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Caching.Memory;
+using System.Linq;
 
 namespace WebQChomp.Pages
 {
@@ -28,8 +28,7 @@ namespace WebQChomp.Pages
     // User input class
     public class Input
     {
-        public int X { get; set; }
-        public int Y { get; set; }
+        public int[][] Grid { get; set; }
         public int Diff { get; set; }
         public bool Reset { get; set; }
     }
@@ -60,59 +59,46 @@ namespace WebQChomp.Pages
         // AJAX-post handler
         public JsonResult OnPostAction([FromBody]Input json)
         {
+            // In case user user decides to reset the game, return without making a move
+            if (json.Reset) return new JsonResult(new { });
+
             // Get AI model
             var model = ModelCache(json.Diff);
 
-            // Try to get game field from user session
-            var fieldValue = HttpContext.Session.GetString("_Field");
-            var field = (fieldValue == null || json.Reset) ? new Field(6, 9, (0, 0)) : JsonConvert.DeserializeObject<Field>(fieldValue);
+            // Convert jagged array from json body to 2d array and create new field
+            int[,] grid = To2D(json.Grid);
+            Field field = new Field(grid, (int)Field.Players.Player2, (int)Field.Players.Blank);
 
-            // In case user user decides to reset the game, delete field from session and return without making a move
-            if (json.Reset)
-            {
-                HttpContext.Session.Clear();
-                return new JsonResult(new { });
-            }
-
-            // Make user move and wait a bit
-            field.MakeMove((json.X, json.Y));
-            System.Threading.Thread.Sleep(125);
-            //Debug.WriteLine("user move");
-            //PrintField(field.Grid);
+            System.Threading.Thread.Sleep(25);
 
             // Let AI choose a move
-            (int Height, int Width) action = (-1, -1);
-            if (field.Winner == 0)
+            (int Height, int Width) action;
+            // Don't use epsilon-prob random move when on medium or hard difficulty
+            bool eps = (json.Diff == 0);
+            // Limit grid usage per move in range from 1 to 6
+            Random rand = new Random();
+            action = model.ChooseAction(field.Grid, eps, rand.Next(1, 7));
+
+            // Get winner to send back to the user
+            int winner = 0;
+            if (action == (-1, -1))
             {
-                // Don't use epsilon-prob random move when on medium or hard difficulty 
-                bool eps = (json.Diff == 0);
-
-                // Limit grid usage per move in range from 1 to 6
-                Random rand = new Random();
-                action = model.ChooseAction(field.Grid, eps, rand.Next(1, 7));
+                winner = (int)Field.Players.Player2;
             }
-
-            // Make move if possible
-            if (action.Height != -1 && action.Width != -1)
+            else
             {
                 field.MakeMove(action);
-                //Debug.WriteLine("AI move");
-                //PrintField(field.Grid);
+
+                if (field.Winner != 0)
+                {
+                    winner = field.Winner;
+                }
             }
 
-            // Update winner and reset game field if the game's ended
-            int winner = 0;
-            if (field.Winner != 0)
-            {
-                winner = field.Winner;
-                field = new Field(6, 9, (0, 0));
-            }
-
-            HttpContext.Session.SetString("_Field", JsonConvert.SerializeObject(field));
             return new JsonResult(new { Height = action.Height, Width = action.Width, Winner = winner });
         }
 
-        // AI model retrieval or caching
+        // AI model retrieval and caching
         AI ModelCache(int diff)
         {
             AI model;
@@ -148,6 +134,31 @@ namespace WebQChomp.Pages
             }
 
             return model;
+        }
+
+        // Converts rectangular jagged arrays to 2d arrays
+        static T[,] To2D<T>(T[][] source)
+        {
+            try
+            {
+                int rows = source.Length;
+                int columns = source.GroupBy(row => row.Length).Single().Key;  // Throws InvalidOperationException if jagged array isn't rectangular
+
+                var result = new T[rows, columns];
+                for (int i = 0; i < rows; i++)
+                {
+                    for (int j = 0; j < columns; j++)
+                    {
+                        result[i, j] = source[i][j];
+                    }
+                }
+
+                return result;
+            }
+            catch (InvalidOperationException)
+            {
+                throw new InvalidOperationException("The given jagged array isn't rectangular");
+            }
         }
     }
 }
