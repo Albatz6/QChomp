@@ -48,8 +48,10 @@ namespace QChompLibrary
 
 
         #region Methods
+
+        #region AI core methods
         // Returns q-value from the dictionary given state and action
-        double GetQValue(int[,] state, (int Height, int Width) action, bool isReward)
+        double GetQValue(int[,] state, (int Height, int Width) action)
         {
             double qValue;
 
@@ -87,7 +89,7 @@ namespace QChompLibrary
             double maxReward = double.NegativeInfinity;
             foreach ((int Height, int Width) action in availableActions)
             {
-                double currentReward = GetQValue(state, action, true);
+                double currentReward = GetQValue(state, action);
 
                 if (currentReward > maxReward)
                 {
@@ -191,7 +193,7 @@ namespace QChompLibrary
 
                 foreach ((int, int) action in availableActions)
                 {
-                    double qValue = GetQValue(state, action, false);
+                    double qValue = GetQValue(state, action);
 
                     // Check square gain if there's a defined limit
                     if (moveAreaLimit != int.MaxValue && !overrideAreaLimit)
@@ -219,14 +221,15 @@ namespace QChompLibrary
         // Updates current model's q-values
         public void UpdateModel(int[,] oldState, (int, int) action, int[,] newState, double reward)
         {
-            double oldQValue = GetQValue(oldState, action, false);
+            double oldQValue = GetQValue(oldState, action);
             double bestFutureReward = BestFutureReward(newState);
 
             UpdateQValue(oldState, action, oldQValue, reward, bestFutureReward);
         }
+        #endregion
 
-
-        // Saves current model as list in json with "<height>_<width>_<qDict.Count>_modelv1" name. Custom name might be used as well.
+        #region Saving and loading methods
+        // Saves current model as list in json with "<height>_<width>_<iter>_model" name. Custom name might be used as well.
         // Returns saved model filename
         public string SaveModel(Field field, int iterCount, string path = null)
         {
@@ -283,6 +286,31 @@ namespace QChompLibrary
             AI model = new AI(ai.LearningRate, ai.EpsilonRate, dict);
 
             return (model, field, ai.Iterations);
+        }
+
+
+        // Saves training stats (number of new transitions found and epsilon used at given training iteration)
+        public static string SaveTrainingStats(Field field, Dictionary<int, (int, double)> data, int iterCount, string path = null)
+        {
+            string filename = (path != null) ? (path) : ($"{field.GridHeight}_{field.GridWidth}_{iterCount}_model_tstats.json");
+
+            // Convert data dict to the list of entries
+            List<JsonAIStats> entries = new List<JsonAIStats>();
+            foreach (KeyValuePair<int, (int, double)> pair in data)
+            {
+                int iteration = pair.Key;
+                int newTransitions = pair.Value.Item1;
+                double eps = pair.Value.Item2;
+
+                JsonAIStats entry = new JsonAIStats(iteration, newTransitions, eps);
+                entries.Add(entry);
+            }
+
+            // Serialize entry list
+            string json = JsonConvert.SerializeObject(entries, Formatting.Indented);
+            File.WriteAllText(filename, json);
+
+            return filename;
         }
 
 
@@ -347,6 +375,8 @@ namespace QChompLibrary
                 return (model, field, iterations);
             }
         }
+        #endregion
+
         #endregion
     }
 }

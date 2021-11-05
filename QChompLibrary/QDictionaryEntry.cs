@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace QChompLibrary
+﻿namespace QChompLibrary
 {
     // This class is used for presenting key-value pair of Q-values dictionary when saving it in Json
     public class QDictionaryEntry

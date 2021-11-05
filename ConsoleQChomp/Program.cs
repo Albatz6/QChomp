@@ -227,13 +227,12 @@ namespace ConsoleQChomp
         {
             int delta = 0;
             AI player = new AI(learningRate, epsRate);
+            Field game = new Field(h, w, (0, 0));
+            Dictionary<int, (int, double)> trainingStats = new Dictionary<int, (int, double)>();
             Console.WriteLine($"Training with {epsRate} eps rate and {learningRate} learning rate");
 
             for (int i = 0; i < iterations; i++)
             {
-                // Initialize new game
-                Field game = new Field(h, w, (0, 0));
-
                 // Keeping track of last move made by both players
                 Dictionary<int, (int[,] State, (int Height, int Width) Action)> last;
                 last = new Dictionary<int, (int[,] State, (int Height, int Width) Action)>();
@@ -263,6 +262,7 @@ namespace ConsoleQChomp
                         if (last[game.Player].State != null)
                             player.UpdateModel(last[game.Player].State, last[game.Player].Action, newState, 1);
 
+                        game.Reset();
                         break;
                     }
                     else if (last[game.Player].State != null) // Default state value is null
@@ -271,14 +271,13 @@ namespace ConsoleQChomp
                     }
                 }
 
-                // Training stats output
-                if ((i + 1) % 1000 == 0)
-                {
-                    int transitions = player.Transitions;
+                // Training stats output and saving
+                int transitions = player.Transitions;
 
-                    Console.WriteLine($"Training game {((i + 1) / 1000)}k... ({transitions} transitions, {transitions - delta} delta)");
-                    delta = player.Transitions;
-                }
+                if ((i + 1) % 1000 == 0) Console.WriteLine($"Training game {((i + 1) / 1000)}k... ({transitions} transitions, {transitions - delta} delta)");
+                trainingStats[(i + 1)] = (transitions - delta, epsRate);
+
+                delta = player.Transitions;
             }
 
             Console.WriteLine("Done training\n");
