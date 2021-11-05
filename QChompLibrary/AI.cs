@@ -290,7 +290,7 @@ namespace QChompLibrary
 
 
         // Saves training stats (number of new transitions found and epsilon used at given training iteration)
-        public static string SaveTrainingStats(Field field, Dictionary<int, (int, double)> data, int iterCount, string path = null)
+        public string SaveTrainingStats(Field field, Dictionary<int, (int, double)> data, int iterCount, string path = null)
         {
             string filename = (path != null) ? (path) : ($"{field.GridHeight}_{field.GridWidth}_{iterCount}_model_tstats.json");
 

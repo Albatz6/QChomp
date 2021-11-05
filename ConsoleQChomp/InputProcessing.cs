@@ -3,9 +3,10 @@ using System.Globalization;
 
 namespace ConsoleQChomp
 {
-    // Used for command-line arguments processing
-    class ArgsProcessing
+    // Used for processing various user inputs (cmd-line args, input dialogs)
+    class InputProcessing
     { 
+        // Cmd-line args array processing
         public static void Process(string[] args, out bool saveFile, out bool loadFile, out string path, out double eps, out double lrate)
         {
             saveFile = false; loadFile = false; path = null;    // Default values for these vars
@@ -90,8 +91,33 @@ namespace ConsoleQChomp
             }
         }
 
+        // User dialog processing. Returns whether user agreed or denied
+        public static bool Dialog(string question)
+        {
+            bool userAnswer = false, validAnswer = false;
+
+            do
+            {
+                Console.Write($"{question} [Y/n]: ");
+                string input = Console.ReadLine().ToLower();
+
+                if (input == "y" || input == "yes")
+                {
+                    validAnswer = true;
+                    userAnswer = true;
+                }
+                else if (input == "n" || input == "no")
+                {
+                    validAnswer = true;
+                    userAnswer = false;
+                }
+            } while (!validAnswer);
+
+            return userAnswer;
+        }
+
         // Double value parsing with commas and dots
-        public static bool GetDouble(string value, out double result)
+        static bool GetDouble(string value, out double result)
         {
             // Try parsing in the current culture
             if (!double.TryParse(value, NumberStyles.Any, CultureInfo.CurrentCulture, out result) &&

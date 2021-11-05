@@ -10,12 +10,13 @@ namespace ConsoleQChomp
         {
             Field gameField;
             AI ai;
+            Dictionary<int, (int, double)> trainingStats = default;
             bool saveFile, loadFile;
             double epsilonRate, learningRate;
             string path;
             int iter = 0; // Used for specifying the number of training iterations
 
-            ArgsProcessing.Process(args, out saveFile, out loadFile, out path, out epsilonRate, out learningRate);
+            InputProcessing.Process(args, out saveFile, out loadFile, out path, out epsilonRate, out learningRate);
             Console.WriteLine("QChomp Console v1\n");
 
             // Load model if specified, otherwise prompt user to enter startup parameters
@@ -85,11 +86,17 @@ namespace ConsoleQChomp
                 while ((h < 2 || h > 20) || (w < 2 || w > 20) || iter < 1);
                 Console.WriteLine();
 
+                // Get training data (AI + training stats)
+                (AI, Dictionary<int, (int, double)>) trainingData;
+                if (epsilonRate == 0.0 && learningRate == 0.0)      trainingData = Train(iter, h, w);
+                else if (epsilonRate != 0.0 && learningRate == 0.0) trainingData = Train(iter, h, w, epsilonRate, 0.5);
+                else if (epsilonRate == 0.0 && learningRate != 0.0) trainingData = Train(iter, h, w, 0.1, learningRate);
+                else                                                trainingData = Train(iter, h, w, epsilonRate, learningRate);
+
+                // Create game field, use AI instance and prepare to save training stats
                 gameField = new Field(h, w, (0, 0));
-                if (epsilonRate == 0.0 && learningRate == 0.0) ai = Train(iter, h, w);
-                else if (epsilonRate != 0.0 && learningRate == 0.0) ai = Train(iter, h, w, epsilonRate, 0.5);
-                else if (epsilonRate == 0.0 && learningRate != 0.0) ai = Train(iter, h, w, 0.1, learningRate);
-                else ai = Train(iter, h, w, epsilonRate, learningRate);
+                ai = trainingData.Item1;
+                trainingStats = trainingData.Item2;
 
                 if (saveFile)
                 {
@@ -113,50 +120,29 @@ namespace ConsoleQChomp
                 Console.WriteLine($"{output}\n");
 
                 // Save model if user agrees
-                bool validAnswer;
                 if (!loadFile && !saveFile)
                 {
-                    validAnswer = false;
-
-                    do
+                    if (InputProcessing.Dialog("Do you want to save current model?"))
                     {
-                        Console.Write("Do you want to save current model? [Y/n]: ");
-                        string input = Console.ReadLine().ToLower();
+                        string filename = ai.SaveModel(gameField, iter, path);
+                        Console.WriteLine($"Model has been saved as '{filename}'\n");
+                        saveFile = true;
 
-                        if (input == "y" || input == "yes")
-                        {
-                            validAnswer = true;
-
-                            string filename = ai.SaveModel(gameField, iter, path);
-                            Console.WriteLine($"Model has been saved as '{filename}'\n");
-                            saveFile = true;
-                        }
-                        else if (input == "n" || input == "no")
-                        {
-                            validAnswer = true;
-                        }
-                    } while (!validAnswer);    
+                        // Save training data if user opts
+                        if (InputProcessing.Dialog("Do you want to save model's training data?")) ai.SaveTrainingStats(gameField, trainingStats, iter);
+                    }   
                 }
 
                 // Stop looping if user denied new game offer
-                validAnswer = false;
-                do
+                if (InputProcessing.Dialog("Do you want to play again?"))
                 {
-                    Console.Write("Do you want to play again? [Y/n]: ");
-                    string input = Console.ReadLine().ToLower();
-
-                    if (input == "y" || input == "yes")
-                    {
-                        validAnswer = true;
-                        gameField.Reset();
-                        Console.WriteLine("\n");
-                    }
-                    else if (input == "n" || input == "no")
-                    {
-                        validAnswer = true;
-                        newGame = false;
-                    }
-                } while (!validAnswer);
+                    gameField.Reset();
+                    Console.WriteLine("\n");
+                }
+                else
+                {
+                    newGame = false;
+                }
             }
         }
 
@@ -222,8 +208,8 @@ namespace ConsoleQChomp
             }
         }
 
-        // Returns AI trained given amount of times to play the game
-        static AI Train(int iterations, int h, int w, double epsRate = 0.1, double learningRate = 0.5)
+        // Returns trained AI and training stats (new transitions found & eps used at given training iteration)
+        static (AI, Dictionary<int, (int, double)>) Train(int iterations, int h, int w, double epsRate = 0.1, double learningRate = 0.5)
         {
             int delta = 0;
             AI player = new AI(learningRate, epsRate);
@@ -281,7 +267,7 @@ namespace ConsoleQChomp
             }
 
             Console.WriteLine("Done training\n");
-            return player;
+            return (player, trainingStats);
         }
     }
 }
