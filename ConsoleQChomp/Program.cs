@@ -11,12 +11,12 @@ namespace ConsoleQChomp
             Field gameField;
             AI ai;
             Dictionary<int, (int, double)> trainingStats = default;
-            bool saveFile, loadFile;
+            bool saveFile, loadFile, noGame;
             double epsilonRate, learningRate;
             string path;
             int iter = 0; // Used for specifying the number of training iterations
 
-            InputProcessing.Process(args, out saveFile, out loadFile, out path, out epsilonRate, out learningRate);
+            InputProcessing.Process(args, out saveFile, out loadFile, out path, out epsilonRate, out learningRate, out noGame);
             Console.WriteLine("QChomp Console v1\n");
 
             // Load model if specified, otherwise prompt user to enter startup parameters
@@ -107,41 +107,61 @@ namespace ConsoleQChomp
 
             Console.WriteLine($"Transitions overall: {ai.Transitions}\nIterations: {iter}\n");
 
-            // Iterate while user decides to play again
-            bool newGame = true;
-            while (newGame)
+            // In case of no game flag, prompt model saving dialog
+            if (!noGame)
             {
-                ASCIIGraphics.Display(gameField);
-                Play(gameField, ai);
-
-                // Congratulate winner
-                // Player1 is the user, Player2 is AI
-                string output = (gameField.Winner == (int)Field.Players.Player1) ? ("Congratulations, you won!") : ("AI won!"); 
-                Console.WriteLine($"{output}\n");
-
-                // Save model if user agrees
-                if (!loadFile && !saveFile)
+                // Iterate while user decides to play again
+                bool newGame = true;
+                while (newGame)
                 {
-                    if (InputProcessing.Dialog("Do you want to save current model?"))
+                    ASCIIGraphics.Display(gameField);
+                    Play(gameField, ai);
+
+                    // Congratulate winner
+                    // Player1 is the user, Player2 is AI
+                    string output = (gameField.Winner == (int)Field.Players.Player1) ? ("Congratulations, you won!") : ("AI won!");
+                    Console.WriteLine($"{output}\n");
+
+                    // Save model if user agrees
+                    if (!loadFile && !saveFile)
                     {
-                        string filename = ai.SaveModel(gameField, iter, path);
-                        Console.WriteLine($"Model has been saved as '{filename}'\n");
-                        saveFile = true;
+                        if (InputProcessing.Dialog("Do you want to save current model?"))
+                        {
+                            string filename = ai.SaveModel(gameField, iter, path);
+                            Console.WriteLine($"Model has been saved as '{filename}'\n");
+                            saveFile = true;
 
-                        // Save training data if user opts
-                        if (InputProcessing.Dialog("Do you want to save model's training data?")) ai.SaveTrainingStats(gameField, trainingStats, iter);
-                    }   
-                }
+                            // Save training data if user opts
+                            if (InputProcessing.Dialog("Do you want to save model's training data?"))
+                            {
+                                ai.SaveTrainingStats(gameField, trainingStats, iter);
+                                Console.WriteLine($"Training data has been saved as '{filename}'\n");
+                            }
+                        }
+                    }
 
-                // Stop looping if user denied new game offer
-                if (InputProcessing.Dialog("Do you want to play again?"))
-                {
-                    gameField.Reset();
-                    Console.WriteLine("\n");
+                    // Stop looping if user denied new game offer
+                    if (InputProcessing.Dialog("Do you want to play again?"))
+                    {
+                        gameField.Reset();
+                        Console.WriteLine("\n");
+                    }
+                    else
+                    {
+                        newGame = false;
+                    }
                 }
-                else
+            }
+            else if (InputProcessing.Dialog("Do you want to save current model?"))
+            {
+                string filename = ai.SaveModel(gameField, iter, path);
+                Console.WriteLine($"Model has been saved as '{filename}'\n");
+
+                // Training data saving dialog
+                if (InputProcessing.Dialog("Do you want to save model's training data?"))
                 {
-                    newGame = false;
+                    filename = ai.SaveTrainingStats(gameField, trainingStats, iter);
+                    Console.WriteLine($"Training data has been saved as '{filename}'\n");
                 }
             }
         }

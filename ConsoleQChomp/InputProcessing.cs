@@ -7,9 +7,9 @@ namespace ConsoleQChomp
     class InputProcessing
     { 
         // Cmd-line args array processing
-        public static void Process(string[] args, out bool saveFile, out bool loadFile, out string path, out double eps, out double lrate)
+        public static void Process(string[] args, out bool saveFile, out bool loadFile, out string path, out double eps, out double lrate, out bool noGame)
         {
-            saveFile = false; loadFile = false; path = null;    // Default values for these vars
+            saveFile = false; loadFile = false; noGame = false; path = null;    // Default values for these vars
             eps = 0.0; lrate = 0.0;
 
             if (args.Length != 0)
@@ -26,14 +26,9 @@ namespace ConsoleQChomp
                             Environment.Exit(0);
                             break;
 
-                        case "-e":
-                        case "--eps":
-
-                            break;
-
-                        case "-lr":
-                        case "--lrate":
-
+                        case "-ng":
+                        case "--nogame":
+                            noGame = true;
                             break;
 
                         case "--save":
