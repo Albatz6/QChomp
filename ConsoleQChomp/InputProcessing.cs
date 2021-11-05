@@ -78,7 +78,8 @@ namespace ConsoleQChomp
                 }
 
                 // Exit with error if user tried to load and save simultaneously or if they try to load with no path provided
-                if ((loadFile && saveFile) || (loadFile && path == null))
+                // Also exit when user tries no game and load flags together
+                if ((loadFile && saveFile) || (loadFile && path == null) || (noGame && loadFile))
                 {
                     ASCIIGraphics.InvalidArgsMessage();
                     Environment.Exit(1);

@@ -152,7 +152,7 @@ namespace ConsoleQChomp
                     }
                 }
             }
-            else if (InputProcessing.Dialog("Do you want to save current model?"))
+            else if (!saveFile && InputProcessing.Dialog("Do you want to save current model?"))
             {
                 string filename = ai.SaveModel(gameField, iter, path);
                 Console.WriteLine($"Model has been saved as '{filename}'\n");
