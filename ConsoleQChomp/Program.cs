@@ -98,10 +98,14 @@ namespace ConsoleQChomp
                 ai = trainingData.Item1;
                 trainingStats = trainingData.Item2;
 
+                // Save model and it's training stats in case of defined saving flag
                 if (saveFile)
                 {
                     string filename = ai.SaveModel(gameField, iter, path);
-                    Console.WriteLine($"Model has been saved as '{filename}'\n");
+                    Console.WriteLine($"Model has been saved as '{filename}'");
+
+                    filename = ai.SaveTrainingStats(gameField, trainingStats, iter, path);
+                    Console.WriteLine($"Training data has been saved as '{filename}'\n");
                 }
             }
 
