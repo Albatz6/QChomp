@@ -231,7 +231,7 @@ namespace ConsoleQChomp
         // Returns trained AI and training stats (new transitions found & eps used at given training iteration)
         static (AI, Dictionary<int, (int, double)>) Train(int iterations, int h, int w, double epsRate = 0.1, double learningRate = 0.5)
         {
-            int delta = 0;
+            int delta = 0, kDelta = 0;
             AI player = new AI(learningRate, epsRate);
             Field game = new Field(h, w, (0, 0));
             Dictionary<int, (int, double)> trainingStats = new Dictionary<int, (int, double)>();
@@ -277,13 +277,17 @@ namespace ConsoleQChomp
                     }
                 }
 
-                // Training stats output and saving
+                // Training stats saving
                 int transitions = player.Transitions;
-
-                if ((i + 1) % 1000 == 0) Console.WriteLine($"Training game {((i + 1) / 1000)}k... ({transitions} transitions, {transitions - delta} delta)");
                 trainingStats[(i + 1)] = (transitions - delta, epsRate);
-
                 delta = player.Transitions;
+
+                // Stats output after every 1k iterations
+                if ((i + 1) % 1000 == 0)
+                {
+                    Console.WriteLine($"Training game {((i + 1) / 1000)}k... ({transitions} transitions, {transitions - kDelta} delta)");
+                    kDelta = player.Transitions;
+                }
             }
 
             Console.WriteLine("Done training\n");
