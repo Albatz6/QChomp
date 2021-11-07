@@ -4,6 +4,8 @@ AI uses reinforcement learning technique called Q-learning and therefore is able
 
 The project currently consists of the core library, console application and basic web app created with Razor Pages to showcase the AI on a 6x9 field.
 Console application can be used for testing various field sizes as well as AI settings (epsilon rate, learning rate and number of training games).
+
+## AI models
 Generated AI models might be saved and loaded as JSON-files. Every model saving creates two files: AI q-table and training statistics.
 Training statistics represents a list of objects, each of which contains info about training iteration, number of new positions found and epsilon rate
 used at the given iteration. Thus, it's possible to plot a line chart to analyze training settings.
