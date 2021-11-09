@@ -113,7 +113,7 @@ namespace ConsoleQChomp
         }
 
         // Double value parsing with commas and dots
-        static bool GetDouble(string value, out double result)
+        public static bool GetDouble(string value, out double result)
         {
             // Try parsing in the current culture
             if (!double.TryParse(value, NumberStyles.Any, CultureInfo.CurrentCulture, out result) &&

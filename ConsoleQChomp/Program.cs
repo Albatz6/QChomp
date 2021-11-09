@@ -12,7 +12,7 @@ namespace ConsoleQChomp
             AI ai;
             Dictionary<int, (int, double)> trainingStats = default;
             bool saveFile, loadFile, noGame;
-            double epsilonRate, learningRate;
+            double epsilonRate = -1, learningRate;
             string path;
             int iter = 0; // Used for specifying the number of training iterations
 
@@ -79,6 +79,18 @@ namespace ConsoleQChomp
                         bool valid = Int32.TryParse(Console.ReadLine(), out iter);
                         if (!valid || iter < 1)
                         {
+                            continue;
+                        }
+                    }
+
+                    if (epsilonRate == 0)
+                    {
+                        Console.Write("Enter epsilon: ");
+
+                        bool valid = InputProcessing.GetDouble(Console.ReadLine(), out epsilonRate);
+                        if (!valid || epsilonRate > 1)
+                        {
+                            epsilonRate = 0;
                             continue;
                         }
                     }
